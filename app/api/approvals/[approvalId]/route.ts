@@ -14,9 +14,14 @@ export async function PATCH(
     return NextResponse.json({ error: "The approval ID is invalid." }, { status: 400 });
   }
 
+  const raw = await request.text();
+  if (new TextEncoder().encode(raw).byteLength > 1024) {
+    return NextResponse.json({ error: "The decision request is too large." }, { status: 413 });
+  }
+
   let body: unknown;
   try {
-    body = await request.json();
+    body = JSON.parse(raw);
   } catch {
     return NextResponse.json({ error: "The request must contain valid JSON." }, { status: 400 });
   }
