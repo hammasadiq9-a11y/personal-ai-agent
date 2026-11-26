@@ -36,7 +36,7 @@ begin
   on conflict (id) do nothing;
   return new;
 end;
-$;
+$$;
 
 revoke all on function public.handle_new_user() from public;
 
