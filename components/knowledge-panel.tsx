@@ -25,7 +25,6 @@ export default function KnowledgePanel() {
   useEffect(() => {
     let active = true;
     async function loadMemories() {
-      setLoading(true);
       try {
         const response = await fetch("/api/memories");
         const data = await response.json();
