@@ -40,7 +40,7 @@ export async function POST(request: Request) {
     }
 
     const raw = await request.text();
-    if (new TextEncoder().encode(raw).byteLength > 24 * 1024) {
+    if (new TextEncoder().encode(raw).byteLength > 48 * 1024) {
       return NextResponse.json({ error: "The proposal is too large." }, { status: 413 });
     }
 
