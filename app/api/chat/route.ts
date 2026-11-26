@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { askAgent, type ApprovalProposal, type ChatMessage, type SavedMemory } from "@/lib/agent";
+import { askAgent, type ApprovalProposal, type ChatMessage, type MemoryWrite, type SavedMemory } from "@/lib/agent";
 import { containsCredentialLikeField, hashPayload } from "@/lib/security/payload-hash";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -163,9 +163,10 @@ export async function POST(request: Request) {
 
     if (memoryError) throw memoryError;
 
-    const { reply, approvalProposals } = await askAgent(messages, (savedMemories ?? []) as SavedMemory[]);
+    const { reply, approvalProposals, memoryWrites } = await askAgent(messages, (savedMemories ?? []) as SavedMemory[]);
     const admin = createAdminClient();
     const approvalIds: string[] = [];
+    const memoryIds: string[] = [];
 
     for (const proposal of approvalProposals as ApprovalProposal[]) {
       const payloadSize = new TextEncoder().encode(JSON.stringify(proposal.payload)).byteLength;
@@ -204,9 +205,47 @@ export async function POST(request: Request) {
       });
     }
 
-    const assistantContent = approvalIds.length
-      ? `${reply}\\n\\nI prepared ${approvalIds.length} proposal(s) for review in the Approvals section. Nothing has been executed.`
-      : reply;
+    for (const memory of memoryWrites as MemoryWrite[]) {
+      const title = memory.title.trim();
+      const content = memory.content.trim();
+      if (
+        !title ||
+        title.length > 160 ||
+        !content ||
+        content.length > 4000 ||
+        !["preference", "goal", "project", "workflow", "fact", "other"].includes(memory.category)
+      ) {
+        continue;
+      }
+
+      const { data: saved, error: saveError } = await supabase
+        .from("memories")
+        .insert({
+          user_id: userId,
+          title,
+          content,
+          category: memory.category,
+          source: "assistant",
+        })
+        .select("id")
+        .single();
+
+      if (saveError) throw saveError;
+      memoryIds.push(saved.id);
+
+      await admin.from("audit_logs").insert({
+        user_id: userId,
+        event_type: "memory.created",
+        resource_type: "memory",
+        resource_id: saved.id,
+        details: { category: memory.category },
+      });
+    }
+
+    const notices: string[] = [];
+    if (approvalIds.length) notices.push(`I prepared ${approvalIds.length} proposal(s) for review in the Approvals section. Nothing has been executed.`);
+    if (memoryIds.length) notices.push(`I saved ${memoryIds.length} note(s) to Knowledge, as requested.`);
+    const assistantContent = notices.length ? `${reply}\\n\\n${notices.join(" ")}` : reply;
 
     const { error: assistantMessageError } = await admin
       .from("messages")
@@ -227,7 +266,7 @@ export async function POST(request: Request) {
 
     if (updateError) throw updateError;
 
-    return NextResponse.json({ reply: assistantContent, conversationId, approvalIds });
+    return NextResponse.json({ reply: assistantContent, conversationId, approvalIds, memoryIds });
   } catch {
     return NextResponse.json(
       { error: "The assistant could not complete or save this response. Try again.", conversationId: payload.conversationId ?? null },
