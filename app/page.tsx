@@ -135,20 +135,6 @@ export default function Home() {
     }
   }
 
-  async function openConversation(id: string) {
-    if (loading) return;
-    try {
-      const response = await fetch(`/api/conversations/${id}/messages`);
-      if (!response.ok) return;
-      const data = await response.json() as { messages: Message[] };
-      setConversationId(id);
-      setMessages(data.messages ?? []);
-      setError("");
-      setActiveView("Assistant");
-    } catch {
-      setError("This conversation could not be loaded.");
-    }
-  }
   function newChat() {
     setConversationId(null);
     setMessages([]);
