@@ -4,7 +4,7 @@ Sidekick is a personal AI workspace for software development, research, learning
 
 ## Current status
 
-**Foundation milestone in progress.** The repository contains the initial Next.js application, a central OpenAI Responses API service, a chat interface, request validation, and a Supabase SQL migration defining user-owned conversations, messages, projects, tasks, approvals, and audit history. Supabase authentication screens, cookie-based sessions, and server-side chat authentication are implemented in code. The app includes conversation persistence routes and a recent-conversation interface. It is not connected to a live Supabase project yet, so database-backed features cannot run until the project is configured and the migration is applied. Research/GitHub integrations and action execution remain unimplemented.
+**Foundation milestone in progress.** The repository contains the initial Next.js application, a central OpenAI Responses API service, a chat interface, request validation, and a Supabase SQL migration defining user-owned conversations, messages, projects, tasks, approvals, and audit history. Supabase authentication screens, cookie-based sessions, and server-side chat authentication are implemented in code. The app includes conversation persistence, saved-memory management, and an approval inbox with payload-hash checks. It is not connected to a live Supabase project yet, so database-backed features cannot run until the project is configured and the migration is applied. Research/GitHub integrations and actual action execution remain unimplemented. Approving a proposal only records the decision.
 
 ## Stack
 
