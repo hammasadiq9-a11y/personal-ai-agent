@@ -21,7 +21,7 @@
 
 `pending -> approved -> executed`
 
-Alternative terminal paths are `rejected`, `expired`, and `failed`. A decision must be tied to the exact action type and payload. The server stores a SHA-256 hash of a canonical JSON representation and rechecks it when the user decides. If the payload changes, the old approval is invalid and a new approval is required. Expired or already-consumed approvals cannot be executed again. Recording an approval does not execute the action; execution adapters are not implemented yet.
+Alternative terminal paths are `rejected`, `expired`, and `failed`. A decision must be tied to the exact action type and payload. The server stores a SHA-256 hash of a canonical JSON representation and rechecks it when the user decides. If the payload changes, the old approval is invalid and a new approval is required. Expired or already-consumed approvals cannot be executed again. Recording a decision does not execute unsupported actions. The current allowlist can create GitHub branches, issues, and pull requests after explicit approval and a separate write token is configured.
 
 ## Required execution checks
 
@@ -39,5 +39,5 @@ Alternative terminal paths are `rejected`, `expired`, and `failed`. A decision m
 - No unrestricted terminal or local computer control.
 - No background agent with persistent write access.
 - No financial transactions or purchases.
-- No automatic messages, publishing, deployment, deletion, or permission changes.
+- No automatic messages, publishing, deployment, deletion, or permission changes. GitHub branch, issue, and pull-request creation are the only external writes enabled, and each requires a payload-hashed approval.
 - No browser-visible service-role keys.
