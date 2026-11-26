@@ -84,7 +84,7 @@ export default function Home() {
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: nextMessages.slice(-20), conversationId }),
+        body: JSON.stringify({ message: content, conversationId }),
       });
       const data = await response.json() as { reply?: string; error?: string; conversationId?: string };
       if (data.conversationId) setConversationId(data.conversationId);
