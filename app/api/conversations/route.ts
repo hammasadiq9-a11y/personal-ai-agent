@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { readJsonBody } from "@/lib/http/read-json";
 import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -36,14 +37,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Sign in to create a conversation." }, { status: 401 });
     }
 
-    let body: unknown;
-    try {
-      body = await request.json();
-    } catch {
-      return NextResponse.json({ error: "The request must contain valid JSON." }, { status: 400 });
-    }
+    const parsedBody = await readJsonBody(request, 2 * 1024);
+    if (!parsedBody.ok) return NextResponse.json({ error: parsedBody.error }, { status: parsedBody.status });
+    const body = parsedBody.value;
 
-    const title = body && typeof body === "object" && typeof (body as Record<string, unknown>).title === "string"
+    const title = body && typeof body === "object" && !Array.isArray(body) && typeof (body as Record<string, unknown>).title === "string"
       ? ((body as Record<string, string>).title.trim())
       : "New conversation";
 
