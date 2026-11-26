@@ -53,7 +53,7 @@ export function isSupportedGitHubAction(actionType: string): boolean {
 export async function executeApprovedGitHubAction(
   actionType: string,
   payload: Payload,
-): Promise<{ url: string | null; number: number | null; message: string }> {
+): Promise<{ url: string | null; number: number | null; message: string; commit_sha?: string | null }> {
   const owner = payload.owner;
   const repo = payload.repo;
   if (!validPart(owner) || !validPart(repo)) {
@@ -171,7 +171,7 @@ export async function executeApprovedGitHubAction(
 
     if (
       typeof title !== "string" || !title.trim() || title.length > 256 ||
-      typeof head !== "string" || !/^[A-Za-z0-9_.\/-]{1,200}$/.test(head) ||
+      typeof head !== "string" || !head.startsWith("agent/") || !/^[A-Za-z0-9_.\/-]{1,200}$/.test(head) ||
       typeof branch !== "string" || !/^[A-Za-z0-9_.\/-]{1,200}$/.test(branch) ||
       (body !== undefined && (typeof body !== "string" || body.length > 60_000))
     ) {
