@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { askAgent, type ChatMessage, type SavedMemory } from "@/lib/agent";
+import { askAgent, type ApprovalProposal, type ChatMessage, type SavedMemory } from "@/lib/agent";
+import { containsCredentialLikeField, hashPayload } from "@/lib/security/payload-hash";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -162,19 +163,58 @@ export async function POST(request: Request) {
 
     if (memoryError) throw memoryError;
 
-    const reply = await askAgent(messages, (savedMemories ?? []) as SavedMemory[]);
-    if (!reply) {
-      return NextResponse.json({ error: "The assistant returned an empty response. Try again.", conversationId }, { status: 502 });
+    const { reply, approvalProposals } = await askAgent(messages, (savedMemories ?? []) as SavedMemory[]);
+    const admin = createAdminClient();
+    const approvalIds: string[] = [];
+
+    for (const proposal of approvalProposals as ApprovalProposal[]) {
+      const payloadSize = new TextEncoder().encode(JSON.stringify(proposal.payload)).byteLength;
+      if (
+        !/^[a-z][a-z0-9_.-]{1,79}$/.test(proposal.actionType) ||
+        !proposal.summary.trim() ||
+        proposal.summary.length > 500 ||
+        payloadSize > 16 * 1024 ||
+        containsCredentialLikeField(proposal.payload)
+      ) {
+        continue;
+      }
+
+      const payloadHash = hashPayload(proposal.payload);
+      const { data: approval, error: approvalError } = await admin
+        .from("approvals")
+        .insert({
+          user_id: userId,
+          action_type: proposal.actionType,
+          summary: proposal.summary.trim(),
+          payload: proposal.payload,
+          payload_hash: payloadHash,
+        })
+        .select("id")
+        .single();
+
+      if (approvalError) throw approvalError;
+      approvalIds.push(approval.id);
+
+      await admin.from("audit_logs").insert({
+        user_id: userId,
+        event_type: "approval.created",
+        resource_type: "approval",
+        resource_id: approval.id,
+        details: { action_type: proposal.actionType },
+      });
     }
 
-    const admin = createAdminClient();
+    const assistantContent = approvalIds.length
+      ? `${reply}\\n\\nI prepared ${approvalIds.length} proposal(s) for review in the Approvals section. Nothing has been executed.`
+      : reply;
+
     const { error: assistantMessageError } = await admin
       .from("messages")
       .insert({
         conversation_id: conversationId,
         user_id: userId,
         role: "assistant",
-        content: reply,
+        content: assistantContent,
       });
 
     if (assistantMessageError) throw assistantMessageError;
@@ -187,7 +227,7 @@ export async function POST(request: Request) {
 
     if (updateError) throw updateError;
 
-    return NextResponse.json({ reply, conversationId });
+    return NextResponse.json({ reply: assistantContent, conversationId, approvalIds });
   } catch {
     return NextResponse.json(
       { error: "The assistant could not complete or save this response. Try again.", conversationId: payload.conversationId ?? null },
