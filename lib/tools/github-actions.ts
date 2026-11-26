@@ -171,8 +171,8 @@ export async function executeApprovedGitHubAction(
 
     if (
       typeof title !== "string" || !title.trim() || title.length > 256 ||
-      typeof head !== "string" || !head.startsWith("agent/") || !/^[A-Za-z0-9_.\/-]{1,200}$/.test(head) ||
-      typeof branch !== "string" || !/^[A-Za-z0-9_.\/-]{1,200}$/.test(branch) ||
+      typeof head !== "string" || !head.startsWith("agent/") || !/^[A-Za-z0-9_.\/-]{1,200}$/.test(head) || head.split("/").some((part) => !part || part === "." || part === "..") ||
+      typeof branch !== "string" || !/^[A-Za-z0-9_.\/-]{1,200}$/.test(branch) || branch.startsWith("/") || branch.endsWith("/") || branch.split("/").some((part) => !part || part === "." || part === "..") ||
       (body !== undefined && (typeof body !== "string" || body.length > 60_000))
     ) {
       throw new Error("The pull request details are invalid.");
