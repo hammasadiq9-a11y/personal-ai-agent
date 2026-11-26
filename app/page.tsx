@@ -76,7 +76,13 @@ export default function Home() {
     }
   }
 
-  async function signOut() {\n    const supabase = createClient();\n    await supabase.auth.signOut();\n    window.location.assign("/login");\n  }\n\n  function newChat() {
+  async function signOut() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    window.location.assign("/login");
+  }
+
+  function newChat() {
     setMessages([]);
     setError("");
     setInput("");
