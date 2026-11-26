@@ -18,7 +18,7 @@ Sidekick is a personal AI workspace for software development, research, learning
 1. **Web client**: chat, project workspace, conversation history, task list, and approval inbox.
 2. **Application API**: authenticated routes, input validation, per-user quotas, and orchestration.
 3. **Agent core**: model instructions, context assembly, tool selection, and response formatting.
-4. **Tool adapters**: read-only GitHub, web research, and document parsing first. Write-capable adapters are added only behind approval checks.
+4. **Tool adapters**: read-only GitHub, web research, and document parsing first. GitHub branch, issue, and pull-request creation are allowlisted and execute only after approval checks; other write adapters remain disabled.
 5. **Data layer**: Supabase Auth and Postgres with row-level security.
 6. **Execution boundary**: isolated, short-lived workers for code or file operations. Never execute model-generated commands directly on the web server.
 
