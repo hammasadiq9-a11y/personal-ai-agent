@@ -9,7 +9,7 @@ returns trigger
 language plpgsql
 as $$
 begin
-  new.updated_at = timezone('utc', now());
+  new.updated_at = now();
   return new;
 end;
 $$;
@@ -125,6 +125,7 @@ create table public.approvals (
   action_type text not null check (char_length(action_type) between 1 and 80),
   summary text not null check (char_length(summary) between 1 and 500),
   payload jsonb not null default '{}'::jsonb,
+  payload_hash text not null check (char_length(payload_hash) = 64),
   status text not null default 'pending' check (status in ('pending', 'approved', 'rejected', 'expired', 'executed', 'failed')),
   expires_at timestamptz,
   decided_at timestamptz,
