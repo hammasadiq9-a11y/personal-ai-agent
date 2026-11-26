@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import {
   ArrowUp, Bot, ChevronDown, CircleHelp, Code2,
   FileText, FolderKanban, Globe2, GraduationCap, Menu, Plus,
-  Search, Settings2, ShieldCheck, Sparkles, Terminal, User, X, LogOut,
+  Search, ShieldCheck, Sparkles, Terminal, User, X, LogOut,
 } from "lucide-react";
 
 type Message = { role: "user" | "assistant"; content: string };
