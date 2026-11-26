@@ -39,7 +39,8 @@ describe("readJsonBody", () => {
           controller.close();
         },
       }),
-    });
+      duplex: "half",
+    } as RequestInit & { duplex: "half" });
 
     const result = await readJsonBody(request, 32);
     expect(result).toMatchObject({ ok: false, status: 413 });
