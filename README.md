@@ -4,7 +4,7 @@ Sidekick is a personal AI workspace for software development, research, learning
 
 ## Current status
 
-**Foundation milestone in progress.** The repository contains the initial Next.js application, a central OpenAI Responses API service, a chat interface, request validation, and a Supabase SQL migration defining user-owned conversations, messages, projects, tasks, approvals, and audit history. Supabase authentication screens, cookie-based sessions, and server-side chat authentication are implemented in code. The app includes conversation persistence, saved-memory management, and an approval inbox with payload-hash checks. It is not connected to a live Supabase project yet, so database-backed features cannot run until the project is configured and the migration is applied. Research/GitHub integrations and actual action execution remain unimplemented. Approving a proposal only records the decision.
+**Foundation milestone in progress.** The repository contains the initial Next.js application, a central OpenAI Responses API service, a chat interface, request validation, and a Supabase SQL migration defining user-owned conversations, messages, projects, tasks, approvals, and audit history. Supabase authentication screens, cookie-based sessions, and server-side chat authentication are implemented in code. The app includes conversation persistence, saved-memory management, and an approval inbox with payload-hash checks. It is not connected to a live Supabase project yet, so database-backed features cannot run until the project is configured and the migration is applied. Hosted web search can be enabled with a supported model. GitHub integration and actual action execution remain unimplemented. Approving a proposal only records the decision.
 
 ## Stack
 
@@ -12,7 +12,7 @@ Sidekick is a personal AI workspace for software development, research, learning
 - Tailwind CSS v4
 - OpenAI Responses API
 - Supabase Auth and Postgres (integration code and initial migration drafted; live project setup pending)
-- GitHub integration (planned)
+- Optional hosted web search through the Responses API\n- GitHub integration (planned)
 
 ## Getting started
 
@@ -37,6 +37,7 @@ Requirements: Node.js 20.9+ and npm.
    ```env
    OPENAI_API_KEY=your_key_here
    OPENAI_MODEL=gpt-4.1-mini
+ENABLE_WEB_SEARCH=false
    ```
 
 5. Start the development server:
