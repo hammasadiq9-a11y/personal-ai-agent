@@ -13,7 +13,7 @@ Sidekick is a personal AI workspace for software development, research, learning
 - OpenAI Responses API
 - Supabase Auth and Postgres (integration code and initial migration drafted; live project setup pending)
 - Optional hosted web search through the Responses API
-- GitHub integration (planned)
+- Optional read-only GitHub API integration
 
 ## Getting started
 
@@ -39,7 +39,6 @@ Requirements: Node.js 20.9+ and npm.
    OPENAI_API_KEY=your_key_here
    OPENAI_MODEL=gpt-4.1-mini
    ENABLE_WEB_SEARCH=false
-   # For hosted web search, use a supported model and set ENABLE_WEB_SEARCH=true
    ```
 
 5. Start the development server:
@@ -50,12 +49,15 @@ Requirements: Node.js 20.9+ and npm.
 
 6. Open http://localhost:3000.
 
+For hosted web search, switch to a supported model such as `gpt-6.2-astra` and set `ENABLE_WEB_SEARCH=true`. This uses hosted web search and may add API usage costs.
+
 ## Available scripts
 
 - `npm run dev` — development server
 - `npm run build` — production build
 - `npm run lint` — ESLint
 - `npm run typecheck` — TypeScript validation
+- `npm run test` — unit tests
 
 ## Security notes
 
