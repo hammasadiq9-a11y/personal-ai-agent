@@ -1,4 +1,4 @@
-# Personal AI Workspace — Personal AI Workspace
+# Personal AI Workspace
 
 Personal AI Workspace is a personal AI workspace for software development, research, learning, and project planning.
 
@@ -31,7 +31,7 @@ Requirements: Node.js 20.9+ and npm.
    cp .env.example .env.local
    ```
 
-3. Create a Supabase project, then run `supabase/migrations/0001_initial_schema.sql` in its SQL editor. In Supabase Auth settings, enable email/password sign-in and set the Site URL to your app origin. Add the project URL and publishable key to `.env.local`. Set `SUPABASE_SERVICE_ROLE_KEY` to the project's service-role secret in the server environment only. Optionally add a fine-grained `GITHUB_TOKEN` with read-only access to the repositories you want Personal AI Workspace to inspect. Never expose that key with a `NEXT_PUBLIC_` prefix. For local development, allow `http://localhost:3000/auth/callback` as an auth redirect URL.
+3. Create a Supabase project, then run `supabase/migrations/0001_initial_schema.sql` in its SQL editor. In Supabase Auth settings, enable email/password sign-in and set the Site URL to your app origin. Add the project URL and publishable key to `.env.local`. Set `SUPABASE_SERVICE_ROLE_KEY` to the project's service-role secret in the server environment only. Optionally add a fine-grained `GITHUB_TOKEN` with read-only access to the repositories you want Personal AI Workspace to inspect. Never expose either key with a `NEXT_PUBLIC_` prefix. To enable approved GitHub writes, add a separate `GITHUB_WRITE_TOKEN` scoped to selected repositories with only the required Contents, Issues, and Pull requests write permissions. For local development, allow `http://localhost:3000/auth/callback` as an auth redirect URL.
 
 4. Add an OpenAI API key to `.env.local`. The default model below keeps hosted web search disabled:
 
@@ -66,7 +66,7 @@ For hosted web search, switch to a supported model such as `gpt-6.2-astra` and s
 - Chat turns are stored in owner-scoped conversations. The server loads prior history from the database rather than trusting browser-supplied assistant messages. OpenAI requests use `store: false` and a bounded timeout/output size.
 - Saved memory is loaded as background context. The assistant only writes a memory when the user explicitly asks.
 - GitHub branch, issue, and pull-request creation can be proposed through function calling. Proposals are payload-hashed, audited, expire after 24 hours, and execute only after explicit approval. No other external writes are enabled.
-- The migration has not been applied to a live database or tested against real users. GitHub write operations, richer task workflows, and actual action execution remain unimplemented. Projects can be created/archived; tasks can be created, listed, and updated. Do not expose this as a public multi-user service until database setup, tests, and security checks are complete.
+- The migration has not been applied to a live database or tested against real users. GitHub writes are limited to branch, issue, and pull-request creation after explicit approval. Other external action types and deployment remain unimplemented. Projects can be created/archived; tasks can be created, listed, and updated. Do not expose this as a public multi-user service until database setup, tests, and security checks are complete.
 
 ## Roadmap
 
@@ -74,7 +74,7 @@ For hosted web search, switch to a supported model such as `gpt-6.2-astra` and s
 2. Connect Supabase and verify account creation, sign-in, and RLS isolation
 3. Add document retrieval, task due-date workflows, and richer project management
 4. Expand the allowlisted GitHub actions and add document retrieval
-5. Controlled action execution behind verified approvals
+5. Extend the GitHub action allowlist after further security and integration testing
 6. Tests, observability, and deployment hardening
 
 ## Architecture and security notes
