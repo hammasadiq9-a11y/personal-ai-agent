@@ -11,6 +11,7 @@ type Approval = {
   status: "pending" | "approved" | "rejected" | "failed" | "executed" | string;
   created_at: string;
   decided_at?: string | null;
+  execution_result?: { url?: string | null; message?: string } | null;
 };
 
 export default function ApprovalsPanel() {
@@ -62,7 +63,7 @@ export default function ApprovalsPanel() {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "The decision could not be saved.");
-      setApprovals((current) => current.map((item) => item.id === id ? { ...item, ...data.approval } : item));
+      setApprovals((current) => current.map((item) => item.id === id ? { ...item, ...data.approval, execution_result: data.result ?? item.execution_result } : item));
     } catch (err) {
       setError(err instanceof Error ? err.message : "The decision could not be saved.");
     } finally {
@@ -105,7 +106,7 @@ export default function ApprovalsPanel() {
                   <button onClick={() => void decide(approval.id, "approve")} disabled={busyId === approval.id} className="flex items-center gap-2 rounded-lg bg-violet-300 px-3 py-2 text-xs font-semibold text-[#11111a] transition hover:bg-violet-200 disabled:opacity-50"><Check size={14}/>{busyId === approval.id ? "Saving..." : "Approve proposal"}</button>
                 </div>
               ) : (
-                <p className="mt-4 text-[10px] text-slate-600">{approval.status === "executed" ? "Executed successfully after approval." : approval.status === "rejected" ? "Proposal rejected." : approval.status === "failed" ? "Execution failed. Review the error and check GitHub before retrying." : "Approval recorded; check the connected GitHub repository for the result."}</p>
+                <p className="mt-4 text-[10px] text-slate-600">{approval.status === "executed" ? "Executed successfully after approval." : approval.status === "rejected" ? "Proposal rejected." : approval.status === "failed" ? "Execution failed. Review the error and check GitHub before retrying." : "Approval recorded; check the connected GitHub repository for the result."}{approval.execution_result?.url && <a href={approval.execution_result.url} target="_blank" rel="noreferrer" className="ml-2 text-violet-200 underline">Open result</a>}</p>
               )}
             </article>
           ))}
