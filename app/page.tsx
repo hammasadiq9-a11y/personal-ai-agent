@@ -2,6 +2,7 @@
 
 import { FormEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import KnowledgePanel from "@/components/knowledge-panel";
 import {
   ArrowUp, Bot, ChevronDown, CircleHelp, Code2,
   FileText, FolderKanban, Globe2, GraduationCap, Menu, Plus,
@@ -245,7 +246,7 @@ export default function Home() {
         ) : (
           <div className="mx-auto w-full max-w-4xl flex-1 px-5 py-12 md:px-8">
             <div className="mb-8 flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl border border-violet-300/20 bg-violet-300/10 text-violet-200">{activeView === "Projects" ? <FolderKanban size={19}/> : activeView === "Research" ? <Globe2 size={19}/> : <FileText size={19}/>}</div><div><h1 className="text-2xl font-medium text-slate-100">{activeView}</h1><p className="mt-1 text-sm text-slate-500">This workspace is being prepared.</p></div></div>
-            {activeView === "Projects" ? <div className="grid gap-3 sm:grid-cols-2">{projects.map((project) => <div key={project.name} className="rounded-2xl border border-white/[0.08] bg-white/[0.025] p-5"><div className="flex items-center justify-between"><project.icon size={19} className="text-violet-200"/><span className="rounded-full bg-white/[0.06] px-2 py-1 text-[10px] text-slate-400">{project.status}</span></div><h2 className="mt-5 text-base font-medium text-slate-200">{project.name}</h2><p className="mt-1 text-xs text-slate-500">{project.detail}</p></div>)}</div> : <div className="rounded-2xl border border-dashed border-white/10 p-10 text-center"><CircleHelp className="mx-auto text-slate-600" size={24}/><p className="mt-4 text-sm text-slate-400">This module will be connected in a later milestone.</p><button onClick={() => setActiveView("Assistant")} className="mt-4 text-xs text-violet-300 hover:text-violet-200">Return to assistant</button></div>}
+            {activeView === "Projects" ? <div className="grid gap-3 sm:grid-cols-2">{projects.map((project) => <div key={project.name} className="rounded-2xl border border-white/[0.08] bg-white/[0.025] p-5"><div className="flex items-center justify-between"><project.icon size={19} className="text-violet-200"/><span className="rounded-full bg-white/[0.06] px-2 py-1 text-[10px] text-slate-400">{project.status}</span></div><h2 className="mt-5 text-base font-medium text-slate-200">{project.name}</h2><p className="mt-1 text-xs text-slate-500">{project.detail}</p></div>)}</div> : activeView === "Knowledge" ? <KnowledgePanel/> : <div className="rounded-2xl border border-dashed border-white/10 p-10 text-center"><CircleHelp className="mx-auto text-slate-600" size={24}/><p className="mt-4 text-sm text-slate-400">This module will be connected in a later milestone.</p><button onClick={() => setActiveView("Assistant")} className="mt-4 text-xs text-violet-300 hover:text-violet-200">Return to assistant</button></div>}
           </div>
         )}
       </section>
