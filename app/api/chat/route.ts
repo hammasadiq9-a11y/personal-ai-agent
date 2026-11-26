@@ -6,6 +6,8 @@ export const maxDuration = 30;
 
 const MAX_MESSAGES = 20;
 const MAX_MESSAGE_LENGTH = 8_000;
+const MAX_TOTAL_CONTENT_LENGTH = 32_000;
+const MAX_BODY_BYTES = 64 * 1024;
 
 function isChatMessage(value: unknown): value is ChatMessage {
   if (!value || typeof value !== "object") return false;
@@ -19,30 +21,68 @@ function isChatMessage(value: unknown): value is ChatMessage {
 }
 
 export async function POST(request: Request) {
+  const declaredLength = Number(request.headers.get("content-length") || 0);
+  if (declaredLength > MAX_BODY_BYTES) {
+    return NextResponse.json({ error: "The request is too large." }, { status: 413 });
+  }
+
+  let rawBody: string;
   try {
-    const body: unknown = await request.json();
-    if (!body || typeof body !== "object" || !Array.isArray((body as { messages?: unknown }).messages)) {
-      return NextResponse.json({ error: "A messages array is required." }, { status: 400 });
-    }
+    rawBody = await request.text();
+  } catch {
+    return NextResponse.json({ error: "The request body could not be read." }, { status: 400 });
+  }
 
-    const messages = (body as { messages: unknown[] }).messages;
-    if (
-      messages.length === 0 ||
-      messages.length > MAX_MESSAGES ||
-      !messages.every(isChatMessage) ||
-      messages[messages.length - 1]?.role !== "user"
-    ) {
-      return NextResponse.json({ error: "The conversation is invalid or too long." }, { status: 400 });
-    }
+  if (new TextEncoder().encode(rawBody).byteLength > MAX_BODY_BYTES) {
+    return NextResponse.json({ error: "The request is too large." }, { status: 413 });
+  }
 
-    const reply = await askAgent(messages as ChatMessage[]);
-    return NextResponse.json({ reply });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "The assistant could not complete the request.";
-    const status = message.includes("OPENAI_API_KEY") ? 503 : 500;
+  let body: unknown;
+  try {
+    body = JSON.parse(rawBody);
+  } catch {
+    return NextResponse.json({ error: "The request must contain valid JSON." }, { status: 400 });
+  }
+
+  if (!body || typeof body !== "object" || !Array.isArray((body as { messages?: unknown }).messages)) {
+    return NextResponse.json({ error: "A messages array is required." }, { status: 400 });
+  }
+
+  const messages = (body as { messages: unknown[] }).messages;
+  const totalLength = messages.reduce(
+    (total, item) => total + (item && typeof item === "object" && typeof (item as Record<string, unknown>).content === "string"
+      ? ((item as Record<string, string>).content.length)
+      : 0),
+    0,
+  );
+
+  if (
+    messages.length === 0 ||
+    messages.length > MAX_MESSAGES ||
+    !messages.every(isChatMessage) ||
+    messages[messages.length - 1]?.role !== "user" ||
+    totalLength > MAX_TOTAL_CONTENT_LENGTH
+  ) {
+    return NextResponse.json({ error: "The conversation is invalid or too long." }, { status: 400 });
+  }
+
+  if (!process.env.OPENAI_API_KEY) {
     return NextResponse.json(
-      { error: status === 503 ? "AI is not configured. Add your API key to the server environment." : "Something went wrong while generating a response." },
-      { status },
+      { error: "AI is not configured. Add the API key to the server environment." },
+      { status: 503 },
+    );
+  }
+
+  try {
+    const reply = await askAgent(messages);
+    if (!reply) {
+      return NextResponse.json({ error: "The assistant returned an empty response. Try again." }, { status: 502 });
+    }
+    return NextResponse.json({ reply });
+  } catch {
+    return NextResponse.json(
+      { error: "The assistant is temporarily unavailable. Try again shortly." },
+      { status: 502 },
     );
   }
 }
