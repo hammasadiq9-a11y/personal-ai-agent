@@ -167,9 +167,7 @@ export async function askAgent(
     model: process.env.OPENAI_MODEL || "gpt-4.1-mini",
     instructions: SYSTEM_INSTRUCTIONS + memoryContext + githubContext,
     input: messages.map((message) => ({ role: message.role, content: message.content })),
-    tools: enableTools ? tools : [],
-    tool_choice: enableTools ? "auto" : "none",
-    parallel_tool_calls: true,
+    ...(enableTools ? { tools, tool_choice: "auto" as const, parallel_tool_calls: true } : {}),
     max_output_tokens: 2500,
     store: false,
   });
