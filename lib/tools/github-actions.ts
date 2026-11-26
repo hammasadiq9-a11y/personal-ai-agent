@@ -80,7 +80,7 @@ export async function executeApprovedGitHubAction(
     const data = await githubWrite(`${base}/git/refs`, { ref: `refs/heads/${branch}`, sha }) as Record<string, unknown>;
     const object = data.object as Record<string, unknown> | undefined;
     return {
-      url: typeof data.url === "string" ? data.url : null,
+      url: `https://github.com/${owner}/${repo}/tree/${branch.split("/").map(encodeURIComponent).join("/")}`,
       number: null,
       message: `Created branch ${branch} at ${String(object?.sha ?? sha)}.`,
     };
