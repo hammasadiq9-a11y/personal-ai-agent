@@ -40,7 +40,7 @@ export async function PATCH(
     const admin = createAdminClient();
     const { data: approval, error: fetchError } = await admin
       .from("approvals")
-      .select("id, action_type, payload, payload_hash, status")
+      .select("id, action_type, payload, payload_hash, status, expires_at")
       .eq("id", approvalId)
       .eq("user_id", authData.user.id)
       .maybeSingle();
@@ -49,6 +49,16 @@ export async function PATCH(
     if (!approval) return NextResponse.json({ error: "Approval not found." }, { status: 404 });
     if (approval.status !== "pending") {
       return NextResponse.json({ error: "This approval has already been decided." }, { status: 409 });
+    }
+
+    if (approval.expires_at && new Date(approval.expires_at).getTime() <= Date.now()) {
+      await admin
+        .from("approvals")
+        .update({ status: "expired" })
+        .eq("id", approvalId)
+        .eq("user_id", authData.user.id)
+        .eq("status", "pending");
+      return NextResponse.json({ error: "This proposal has expired. A new proposal is required." }, { status: 410 });
     }
 
     const currentHash = hashPayload(approval.payload);
@@ -63,6 +73,7 @@ export async function PATCH(
       .eq("id", approvalId)
       .eq("user_id", authData.user.id)
       .eq("status", "pending")
+      .eq("payload_hash", currentHash)
       .select("id, action_type, summary, status, decided_at")
       .maybeSingle();
 
