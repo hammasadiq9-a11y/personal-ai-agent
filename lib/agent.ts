@@ -13,6 +13,7 @@ export type MemoryWrite = {
 };
 export type GitHubReadRequest = { name: string; arguments: Record<string, unknown> };
 export type TaskRequest = { name: string; arguments: Record<string, unknown> };
+export type ProjectRequest = { name: string; arguments: Record<string, unknown> };
 
 const SYSTEM_INSTRUCTIONS = `You are the central assistant for a personal AI workspace.
 
@@ -65,6 +66,28 @@ const tools: OpenAI.Responses.Tool[] = [
       required: ["title", "content", "category"],
       additionalProperties: false,
     },
+    strict: true,
+  },
+  {
+    type: "function",
+    name: "create_project",
+    description: "Create a project in the user's private workspace when they explicitly ask to start or track a project.",
+    parameters: {
+      type: "object",
+      properties: {
+        name: { type: "string" },
+        description: { type: "string" },
+      },
+      required: ["name", "description"],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+  {
+    type: "function",
+    name: "list_projects",
+    description: "List projects in the user's private workspace when they ask what projects they have.",
+    parameters: { type: "object", properties: {}, required: [], additionalProperties: false },
     strict: true,
   },
   {
@@ -184,6 +207,7 @@ export async function askAgent(
   memoryWrites: MemoryWrite[];
   githubRequests: GitHubReadRequest[];
   taskRequests: TaskRequest[];
+  projectRequests: ProjectRequest[];
 }> {
   if (!client) {
     throw new Error("AI is not configured yet. Add OPENAI_API_KEY to the server environment.");
@@ -210,6 +234,7 @@ export async function askAgent(
   const memoryWrites: MemoryWrite[] = [];
   const githubRequests: GitHubReadRequest[] = [];
   const taskRequests: TaskRequest[] = [];
+  const projectRequests: ProjectRequest[] = [];
 
   for (const item of response.output) {
     if (item.type !== "function_call") continue;
@@ -243,6 +268,8 @@ export async function askAgent(
           content: args.content,
           category: args.category as MemoryWrite["category"],
         });
+      } else if (item.name === "create_project" || item.name === "list_projects") {
+        projectRequests.push({ name: item.name, arguments: args });
       } else if (item.name === "create_task" || item.name === "list_tasks") {
         taskRequests.push({ name: item.name, arguments: args });
       } else if (item.name.startsWith("github_")) {
@@ -254,7 +281,7 @@ export async function askAgent(
   }
 
   const reply = response.output_text.trim() || (
-    approvalProposals.length || memoryWrites.length || githubRequests.length || taskRequests.length
+    approvalProposals.length || memoryWrites.length || githubRequests.length || taskRequests.length || projectRequests.length
       ? "I've prepared the requested workspace operation. Here are the results."
       : "I couldn't produce a response. Please try again."
   );
@@ -265,5 +292,6 @@ export async function askAgent(
     memoryWrites: memoryWrites.slice(0, 3),
     githubRequests: githubRequests.slice(0, 3),
     taskRequests: taskRequests.slice(0, 5),
+    projectRequests: projectRequests.slice(0, 5),
   };
 }
