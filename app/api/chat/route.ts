@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { readJsonBody } from "@/lib/http/read-json";
 import { askAgent, type ApprovalProposal, type ChatMessage, type GitHubReadRequest, type MemoryWrite, type ProjectRequest, type SavedMemory, type TaskRequest } from "@/lib/agent";
 import { containsCredentialLikeField, hashPayload } from "@/lib/security/payload-hash";
 import { createAdminClient } from "@/lib/supabase/admin";
