@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { askAgent, type ApprovalProposal, type ChatMessage, type GitHubReadRequest, type MemoryWrite, type SavedMemory } from "@/lib/agent";
+import { askAgent, type ApprovalProposal, type ChatMessage, type GitHubReadRequest, type MemoryWrite, type SavedMemory, type TaskRequest } from "@/lib/agent";
 import { containsCredentialLikeField, hashPayload } from "@/lib/security/payload-hash";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -168,6 +168,8 @@ export async function POST(request: Request) {
     let reply = initialResult.reply;
     const approvalProposals = initialResult.approvalProposals;
     const memoryWrites = initialResult.memoryWrites;
+    const taskIds: string[] = [];
+    const toolResults: unknown[] = [];
 
     if (initialResult.githubRequests.length) {
       const githubResults = await Promise.all(
@@ -184,10 +186,69 @@ export async function POST(request: Request) {
         }),
       );
 
+      toolResults.push(...githubResults);
+    }
+
+    for (const taskCall of initialResult.taskRequests as TaskRequest[]) {
+      const args = taskCall.arguments;
+
+      if (taskCall.name === "create_task") {
+        const title = typeof args.title === "string" ? args.title.trim() : "";
+        const description = typeof args.description === "string" ? args.description.trim() : "";
+        const priority = ["low", "normal", "high", "urgent"].includes(String(args.priority)) ? String(args.priority) : "normal";
+        const projectId = typeof args.projectId === "string" && args.projectId ? args.projectId : null;
+        const dueAt = typeof args.dueAt === "string" && args.dueAt ? new Date(args.dueAt) : null;
+
+        if (
+          !title ||
+          title.length > 200 ||
+          description.length > 4000 ||
+          (projectId !== null && !UUID_PATTERN.test(projectId)) ||
+          (dueAt !== null && Number.isNaN(dueAt.getTime()))
+        ) {
+          toolResults.push({ tool: "create_task", error: "The task details were invalid and were not saved." });
+          continue;
+        }
+
+        const { data: task, error: taskError } = await supabase
+          .from("tasks")
+          .insert({
+            user_id: userId,
+            title,
+            description,
+            priority,
+            project_id: projectId,
+            due_at: dueAt?.toISOString() ?? null,
+          })
+          .select("id, title, status, priority, due_at")
+          .single();
+
+        if (taskError) throw taskError;
+        taskIds.push(task.id);
+        toolResults.push({ tool: "create_task", task });
+      } else if (taskCall.name === "list_tasks") {
+        const status = ["todo", "in_progress", "blocked", "done", "cancelled"].includes(String(args.status))
+          ? String(args.status)
+          : "all";
+        let query = supabase
+          .from("tasks")
+          .select("id, title, description, status, priority, due_at, project_id")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false })
+          .limit(20);
+        if (status !== "all") query = query.eq("status", status);
+
+        const { data: tasks, error: tasksError } = await query;
+        if (tasksError) throw tasksError;
+        toolResults.push({ tool: "list_tasks", status, tasks: tasks ?? [] });
+      }
+    }
+
+    if (toolResults.length) {
       const finalResult = await askAgent(
         messages,
         (savedMemories ?? []) as SavedMemory[],
-        JSON.stringify(githubResults),
+        JSON.stringify(toolResults),
         false,
       );
       reply = finalResult.reply;
@@ -274,6 +335,7 @@ export async function POST(request: Request) {
     const notices: string[] = [];
     if (approvalIds.length) notices.push(`I prepared ${approvalIds.length} proposal(s) for review in the Approvals section. Nothing has been executed.`);
     if (memoryIds.length) notices.push(`I saved ${memoryIds.length} note(s) to Knowledge, as requested.`);
+    if (taskIds.length) notices.push(`I created ${taskIds.length} task(s) in your workspace.`);
     const assistantContent = notices.length ? `${reply}\n\n${notices.join(" ")}` : reply;
 
     const { error: assistantMessageError } = await admin
@@ -295,7 +357,7 @@ export async function POST(request: Request) {
 
     if (updateError) throw updateError;
 
-    return NextResponse.json({ reply: assistantContent, conversationId, approvalIds, memoryIds });
+    return NextResponse.json({ reply: assistantContent, conversationId, approvalIds, memoryIds, taskIds });
   } catch {
     return NextResponse.json(
       { error: "The assistant could not complete or save this response. Try again.", conversationId: activeConversationId },
