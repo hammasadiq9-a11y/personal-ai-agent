@@ -130,7 +130,7 @@ export async function runGitHubTool(name: string, args: GitHubArgs): Promise<unk
   }
 
   if (name === "github_read_file") {
-    if (typeof args.path !== "string" || !args.path.trim() || args.path.length > 300) {
+    if (typeof args.path !== "string" || !args.path.trim() || args.path.length > 300 || args.path.split("/").some((part) => !part || part === "." || part === "..")) {
       return { error: "A valid file path is required." };
     }
     const filePath = args.path.split("/").map(encodeURIComponent).join("/");
