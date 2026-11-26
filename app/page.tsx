@@ -156,7 +156,7 @@ export default function Home() {
             <button onClick={() => setSidebarOpen(false)} className="rounded-lg p-2 text-slate-500 hover:bg-white/5 md:hidden" aria-label="Close sidebar"><X size={17}/></button>
           </div>
 
-          <button onClick={newChat} className="mt-6 flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3 text-sm text-slate-200 transition hover:border-violet-300/30 hover:bg-violet-300/[0.07]">
+          <button onClick={newChat} disabled={loading} className="mt-6 flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-3 text-sm text-slate-200 transition hover:border-violet-300/30 hover:bg-violet-300/[0.07]">
             <Plus size={16}/> New conversation <span className="ml-auto text-[10px] text-slate-600">⌘ K</span>
           </button>
 
