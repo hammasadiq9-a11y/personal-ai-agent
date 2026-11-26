@@ -12,7 +12,8 @@ Sidekick is a personal AI workspace for software development, research, learning
 - Tailwind CSS v4
 - OpenAI Responses API
 - Supabase Auth and Postgres (integration code and initial migration drafted; live project setup pending)
-- Optional hosted web search through the Responses API\n- GitHub integration (planned)
+- Optional hosted web search through the Responses API
+- GitHub integration (planned)
 
 ## Getting started
 
@@ -32,7 +33,7 @@ Requirements: Node.js 20.9+ and npm.
 
 3. Create a Supabase project, then run `supabase/migrations/0001_initial_schema.sql` in its SQL editor. In Supabase Auth settings, enable email/password sign-in and set the Site URL to your app origin. Add the project URL and publishable key to `.env.local`. Set `SUPABASE_SERVICE_ROLE_KEY` to the project's service-role secret in the server environment only. Never expose that key with a `NEXT_PUBLIC_` prefix. For local development, allow `http://localhost:3000/auth/callback` as an auth redirect URL.
 
-4. Add an OpenAI API key to `.env.local`:
+4. Add an OpenAI API key to `.env.local`. Keep web search disabled unless you switch to a model that supports the Responses web-search tool. For the current documented setup, use `OPENAI_MODEL=gpt-6.2-astra` and `ENABLE_WEB_SEARCH=true`; hosted search may add API usage costs:
 
    ```env
    OPENAI_API_KEY=your_key_here
@@ -58,17 +59,19 @@ ENABLE_WEB_SEARCH=false
 ## Security notes
 
 - Keep API keys in server-side environment variables. Never commit `.env.local`.
-- The chat endpoint verifies the signed-in user and validates message shape, count, total content, and request size.
-- Chat turns are stored in owner-scoped conversations. Assistant messages are inserted through a server-only service-role client; browser clients cannot create assistant messages. OpenAI requests use `store: false`.
-- The migration has not been applied to a live database or tested against real users. The rate-limit function and memory storage are included in the migration but still need live-database testing. Research/GitHub integrations and action execution remain unimplemented. Do not expose this as a public multi-user service until these controls are added and tested.
+- The chat endpoint verifies the signed-in user, validates request size, and applies a database-backed limit of 20 chat requests per user per minute.
+- Chat turns are stored in owner-scoped conversations. The server loads prior history from the database rather than trusting browser-supplied assistant messages. OpenAI requests use `store: false` and a bounded timeout/output size.
+- Saved memory is loaded as background context. The assistant only writes a memory when the user explicitly asks.
+- External actions can be proposed through function calling. Proposals are payload-hashed, audited, and require a user decision. Approval does not execute them.
+- The migration has not been applied to a live database or tested against real users. GitHub integration, project/task CRUD, and actual action execution remain unimplemented. Do not expose this as a public multi-user service until database setup, tests, and security checks are complete.
 
 ## Roadmap
 
 1. Application foundation and AI chat
 2. Connect Supabase and verify account creation, sign-in, and RLS isolation
 3. Add project/task CRUD and document retrieval
-4. Read-only GitHub and web research tools
-5. Approval queue and controlled action execution
+4. Read-only GitHub integration and better research workflows
+5. Controlled action execution behind verified approvals
 6. Tests, observability, and deployment hardening
 
 ## Architecture and security notes
