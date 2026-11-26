@@ -27,7 +27,8 @@ create table public.conversations (
   title text not null default 'New conversation' check (char_length(title) between 1 and 160),
   archived_at timestamptz,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  constraint conversations_id_user_unique unique (id, user_id)
 );
 
 create table public.messages (
@@ -43,8 +44,6 @@ create table public.messages (
     on delete cascade
 );
 
-alter table public.conversations
-  add constraint conversations_id_user_unique unique (id, user_id);
 
 create table public.projects (
   id uuid primary key default gen_random_uuid(),
@@ -54,7 +53,8 @@ create table public.projects (
   status text not null default 'active' check (status in ('active', 'paused', 'completed', 'archived')),
   metadata jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  constraint projects_id_user_unique unique (id, user_id)
 );
 
 create table public.tasks (
@@ -71,11 +71,8 @@ create table public.tasks (
   constraint tasks_project_user_fk
     foreign key (project_id, user_id)
     references public.projects(id, user_id)
-    on delete set null
+    on delete cascade
 );
-
-alter table public.projects
-  add constraint projects_id_user_unique unique (id, user_id);
 
 create table public.approvals (
   id uuid primary key default gen_random_uuid(),
