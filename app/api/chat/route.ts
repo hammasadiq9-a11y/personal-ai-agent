@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { runGitHubTool } from "@/lib/tools/github";
 
 export const runtime = "nodejs";
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 const MAX_MESSAGE_LENGTH = 8_000;
 const MAX_BODY_BYTES = 16 * 1024;
