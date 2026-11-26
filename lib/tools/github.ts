@@ -74,7 +74,7 @@ export async function runGitHubTool(name: string, args: GitHubArgs): Promise<unk
   const base = `/repos/${encodeURIComponent(repository.owner)}/${encodeURIComponent(repository.repo)}`;
 
   if (name === "github_get_branch") {
-    if (typeof args.branch !== "string" || !args.branch.trim() || args.branch.length > 180) {
+    if (typeof args.branch !== "string" || !args.branch.trim() || args.branch.length > 180 || args.branch.split("/").some((part) => !part || part === "." || part === "..")) {
       return { error: "A valid branch name is required." };
     }
     const branchPath = args.branch.split("/").map(encodeURIComponent).join("/");
