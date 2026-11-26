@@ -298,7 +298,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ reply: assistantContent, conversationId, approvalIds, memoryIds });
   } catch {
     return NextResponse.json(
-      { error: "The assistant could not complete or save this response. Try again.", conversationId: payload.conversationId ?? null },
+      { error: "The assistant could not complete or save this response. Try again.", conversationId: activeConversationId },
       { status: 502 },
     );
   }
