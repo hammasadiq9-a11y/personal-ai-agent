@@ -4,7 +4,7 @@ Sidekick is a personal AI workspace for software development, research, learning
 
 ## Current status
 
-**Foundation milestone in progress.** The repository contains the initial Next.js application, a central OpenAI Responses API service, a chat interface, request validation, and a Supabase SQL migration defining user-owned conversations, messages, projects, tasks, approvals, and audit history. Supabase authentication screens, cookie-based sessions, and server-side chat authentication are implemented in code. The app includes conversation persistence, saved-memory management, and an approval inbox with payload-hash checks. It is not connected to a live Supabase project yet, so database-backed features cannot run until the project is configured and the migration is applied. Hosted web search can be enabled with a supported model. GitHub integration and actual action execution remain unimplemented. Approving a proposal only records the decision.
+**Foundation milestone in progress.** The repository contains the initial Next.js application, a central OpenAI Responses API service, a chat interface, request validation, and a Supabase SQL migration defining user-owned conversations, messages, projects, tasks, approvals, and audit history. Supabase authentication screens, cookie-based sessions, and server-side chat authentication are implemented in code. The app includes conversation persistence, saved-memory management, and an approval inbox with payload-hash checks. It is not connected to a live Supabase project yet, so database-backed features cannot run until the project is configured and the migration is applied. Hosted web search can be enabled with a supported model. Read-only GitHub repository inspection is available when a server-side token is configured. GitHub writes and actual action execution remain unimplemented. Approving a proposal only records the decision.
 
 ## Stack
 
@@ -31,7 +31,7 @@ Requirements: Node.js 20.9+ and npm.
    cp .env.example .env.local
    ```
 
-3. Create a Supabase project, then run `supabase/migrations/0001_initial_schema.sql` in its SQL editor. In Supabase Auth settings, enable email/password sign-in and set the Site URL to your app origin. Add the project URL and publishable key to `.env.local`. Set `SUPABASE_SERVICE_ROLE_KEY` to the project's service-role secret in the server environment only. Never expose that key with a `NEXT_PUBLIC_` prefix. For local development, allow `http://localhost:3000/auth/callback` as an auth redirect URL.
+3. Create a Supabase project, then run `supabase/migrations/0001_initial_schema.sql` in its SQL editor. In Supabase Auth settings, enable email/password sign-in and set the Site URL to your app origin. Add the project URL and publishable key to `.env.local`. Set `SUPABASE_SERVICE_ROLE_KEY` to the project's service-role secret in the server environment only. Optionally add a fine-grained `GITHUB_TOKEN` with read-only access to the repositories you want Sidekick to inspect. Never expose that key with a `NEXT_PUBLIC_` prefix. For local development, allow `http://localhost:3000/auth/callback` as an auth redirect URL.
 
 4. Add an OpenAI API key to `.env.local`. Keep web search disabled unless you switch to a model that supports the Responses web-search tool. For the current documented setup, use `OPENAI_MODEL=gpt-6.2-astra` and `ENABLE_WEB_SEARCH=true`; hosted search may add API usage costs:
 
