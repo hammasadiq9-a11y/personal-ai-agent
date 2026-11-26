@@ -152,19 +152,19 @@ create table public.api_rate_limits (
 alter table public.api_rate_limits enable row level security;
 
 create or replace function public.consume_chat_rate_limit(
+  p_user_id uuid,
   p_max_requests integer,
   p_window_seconds integer
 )
 returns boolean
 language plpgsql
-security definer
+security invoker
 set search_path = ''
 as $$
 declare
-  v_user_id uuid := auth.uid();
   v_request_count integer;
 begin
-  if v_user_id is null then
+  if p_user_id is null then
     return false;
   end if;
 
@@ -174,7 +174,7 @@ begin
   end if;
 
   insert into public.api_rate_limits (user_id, window_started_at, request_count)
-  values (v_user_id, now(), 1)
+  values (p_user_id, now(), 1)
   on conflict (user_id) do update
   set
     window_started_at = case
@@ -193,8 +193,8 @@ begin
 end;
 $$;
 
-revoke all on function public.consume_chat_rate_limit(integer, integer) from public, anon;
-grant execute on function public.consume_chat_rate_limit(integer, integer) to authenticated;
+revoke all on function public.consume_chat_rate_limit(uuid, integer, integer) from public, anon, authenticated;
+grant execute on function public.consume_chat_rate_limit(uuid, integer, integer) to service_role;
 
 create table public.audit_logs (
   id bigint generated always as identity primary key,
