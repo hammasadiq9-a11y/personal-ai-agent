@@ -274,7 +274,7 @@ export async function POST(request: Request) {
     const notices: string[] = [];
     if (approvalIds.length) notices.push(`I prepared ${approvalIds.length} proposal(s) for review in the Approvals section. Nothing has been executed.`);
     if (memoryIds.length) notices.push(`I saved ${memoryIds.length} note(s) to Knowledge, as requested.`);
-    const assistantContent = notices.length ? `${reply}\\n\\n${notices.join(" ")}` : reply;
+    const assistantContent = notices.length ? `${reply}\n\n${notices.join(" ")}` : reply;
 
     const { error: assistantMessageError } = await admin
       .from("messages")
