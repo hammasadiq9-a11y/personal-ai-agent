@@ -4,7 +4,7 @@ Personal AI Workspace is a personal AI workspace for software development, resea
 
 ## Current status
 
-**Foundation milestone in progress.** The repository contains the initial Next.js application, a central OpenAI Responses API service, a chat interface, request validation, and a Supabase SQL migration defining user-owned conversations, messages, projects, tasks, approvals, and audit history. Supabase authentication screens, cookie-based sessions, and server-side chat authentication are implemented in code. The app includes conversation persistence, saved-memory management, and an approval inbox with payload-hash checks. It is not connected to a live Supabase project yet, so database-backed features cannot run until the project is configured and the migration is applied. Hosted web search can be enabled with a supported model. Read-only GitHub repository inspection is available when a server-side token is configured. GitHub writes and actual action execution remain unimplemented. Approving a proposal only records the decision.
+**Foundation milestone in progress.** The repository contains the initial Next.js application, a central OpenAI Responses API service, a chat interface, request validation, and a Supabase SQL migration defining user-owned conversations, messages, projects, tasks, approvals, and audit history. Supabase authentication screens, cookie-based sessions, and server-side chat authentication are implemented in code. The app includes conversation persistence, saved-memory management, and an approval inbox with payload-hash checks. It is not connected to a live Supabase project yet, so database-backed features cannot run until the project is configured and the migration is applied. Hosted web search can be enabled with a supported model. Read-only GitHub repository inspection is available when a server-side token is configured. GitHub writes are limited to branch, issue, and pull-request creation after explicit approval. Other write operations and deployment remain unimplemented.
 
 ## Stack
 
@@ -65,7 +65,7 @@ For hosted web search, switch to a supported model such as `gpt-6.2-astra` and s
 - The chat endpoint verifies the signed-in user, validates request size, and applies a database-backed limit of 20 chat requests per user per minute.
 - Chat turns are stored in owner-scoped conversations. The server loads prior history from the database rather than trusting browser-supplied assistant messages. OpenAI requests use `store: false` and a bounded timeout/output size.
 - Saved memory is loaded as background context. The assistant only writes a memory when the user explicitly asks.
-- External actions can be proposed through function calling. Proposals are payload-hashed, audited, and require a user decision. Approval does not execute them.
+- GitHub branch, issue, and pull-request creation can be proposed through function calling. Proposals are payload-hashed, audited, expire after 24 hours, and execute only after explicit approval. No other external writes are enabled.
 - The migration has not been applied to a live database or tested against real users. GitHub write operations, richer task workflows, and actual action execution remain unimplemented. Projects can be created/archived; tasks can be created, listed, and updated. Do not expose this as a public multi-user service until database setup, tests, and security checks are complete.
 
 ## Roadmap
@@ -73,7 +73,7 @@ For hosted web search, switch to a supported model such as `gpt-6.2-astra` and s
 1. Application foundation and AI chat
 2. Connect Supabase and verify account creation, sign-in, and RLS isolation
 3. Add document retrieval, task due-date workflows, and richer project management
-4. GitHub write operations behind verified approvals and better research workflows
+4. Expand the allowlisted GitHub actions and add document retrieval
 5. Controlled action execution behind verified approvals
 6. Tests, observability, and deployment hardening
 
