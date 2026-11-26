@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { askAgent, type ChatMessage } from "@/lib/agent";
+import { askAgent, type ChatMessage, type SavedMemory } from "@/lib/agent";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";\nimport type { SavedMemory } from "@/lib/agent";
+import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -43,17 +43,6 @@ export async function POST(request: Request) {
     }
     userId = data.user.id;
 
-    const { data: allowed, error: rateLimitError } = await supabase.rpc(
-      "consume_chat_rate_limit",
-      { p_max_requests: 20, p_window_seconds: 60 },
-    );
-
-    if (rateLimitError) {
-      return NextResponse.json({ error: "Usage protection is not configured. Apply the database migration." }, { status: 503 });
-    }
-    if (!allowed) {
-      return NextResponse.json({ error: "You have reached the short-term usage limit. Wait a minute and try again." }, { status: 429 });
-    }
   } catch {
     return NextResponse.json({ error: "Authentication could not be verified." }, { status: 503 });
   }
@@ -113,6 +102,18 @@ export async function POST(request: Request) {
   if (!process.env.OPENAI_API_KEY) {
     return NextResponse.json({ error: "AI is not configured. Add the API key to the server environment." }, { status: 503 });
   }
+
+    const { data: allowed, error: rateLimitError } = await supabase.rpc(
+      "consume_chat_rate_limit",
+      { p_max_requests: 20, p_window_seconds: 60 },
+    );
+
+    if (rateLimitError) {
+      return NextResponse.json({ error: "Usage protection is not configured. Apply the database migration." }, { status: 503 });
+    }
+    if (!allowed) {
+      return NextResponse.json({ error: "You have reached the short-term usage limit. Wait a minute and try again." }, { status: 429 });
+    }
 
   let conversationId: string | null = null;
 
