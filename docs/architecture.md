@@ -7,7 +7,7 @@ Sidekick is a personal AI workspace for software development, research, learning
 ## Current implementation
 
 - Next.js App Router and TypeScript provide the web application and server routes.
-- The chat route calls the OpenAI Responses API from the server, loads a bounded set of user-saved memory notes, and stores the conversation turn.
+- The chat route calls the OpenAI Responses API from the server, loads a bounded set of user-saved memory notes, stores the conversation turn, and can run read-only GitHub lookups when a server token is configured.
 - The browser loads recent conversations and message history through authenticated API routes; chat turns are persisted in Supabase when the project is configured.
 - The Knowledge view manages user-owned memory notes through authenticated routes.
 - Supabase schema is defined in `supabase/migrations/0001_initial_schema.sql`; the application is not yet connected to it.
