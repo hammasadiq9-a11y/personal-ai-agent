@@ -37,6 +37,7 @@ export async function askAgent(messages: ChatMessage[], savedMemories: SavedMemo
     : "";
   const response = await client.responses.create({
     model: process.env.OPENAI_MODEL || "gpt-4.1-mini",
+    max_output_tokens: 2500,
     instructions: SYSTEM_INSTRUCTIONS + memoryContext,
     input: messages.map((message) => ({
       role: message.role,
