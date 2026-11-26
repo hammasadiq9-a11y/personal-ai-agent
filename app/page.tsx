@@ -14,6 +14,12 @@ import {
 
 type Message = { role: "user" | "assistant"; content: string };
 type Conversation = { id: string; title: string; updated_at: string };
+const projects = [
+  { name: "Novux", detail: "AI website builder", icon: Code2 },
+  { name: "ReleasePilot", detail: "AI code review", icon: ShieldCheck },
+  { name: "Axiom", detail: "Personal AI operating system", icon: Bot },
+];
+
 const suggestions = [
   { icon: Code2, title: "Help me build", prompt: "Help me plan and build a software feature. Start by asking what outcome I need." },
   { icon: Globe2, title: "Research something", prompt: "Help me research a topic. Separate verified facts from assumptions and give me useful sources to investigate." },
