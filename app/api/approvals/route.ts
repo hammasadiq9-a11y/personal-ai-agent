@@ -80,6 +80,7 @@ export async function POST(request: Request) {
         summary,
         payload,
         payload_hash: payloadHash,
+        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
       })
       .select("id, action_type, summary, payload, status, created_at")
       .single();
