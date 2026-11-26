@@ -73,6 +73,23 @@ export async function runGitHubTool(name: string, args: GitHubArgs): Promise<unk
   if (!repository) return { error: "A valid repository owner and name are required." };
   const base = `/repos/${encodeURIComponent(repository.owner)}/${encodeURIComponent(repository.repo)}`;
 
+  if (name === "github_get_branch") {
+    if (typeof args.branch !== "string" || !args.branch.trim() || args.branch.length > 180) {
+      return { error: "A valid branch name is required." };
+    }
+    const branchPath = args.branch.split("/").map(encodeURIComponent).join("/");
+    const data = await githubGet(`${base}/branches/${branchPath}`);
+    if (!data || typeof data !== "object") return data;
+    const item = data as Record<string, unknown>;
+    const commit = item.commit as Record<string, unknown> | undefined;
+    return {
+      name: item.name,
+      protected: item.protected,
+      commit_sha: commit?.sha,
+      commit_url: commit?.html_url,
+    };
+  }
+
   if (name === "github_get_repository") {
     const data = await githubGet(base);
     if (!data || typeof data !== "object") return data;
