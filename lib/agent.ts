@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 
 const apiKey = process.env.OPENAI_API_KEY;
-const client = apiKey ? new OpenAI({ apiKey, timeout: 25_000, maxRetries: 1 }) : null;
+const client = apiKey ? new OpenAI({ apiKey, timeout: 20_000, maxRetries: 0 }) : null;
 
 export type SavedMemory = { title: string; content: string; category: string };
 export type ChatMessage = { role: "user" | "assistant"; content: string };
