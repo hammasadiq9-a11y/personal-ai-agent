@@ -152,7 +152,7 @@ returns boolean
 language plpgsql
 security definer
 set search_path = ''
-as $
+as $$
 declare
   v_user_id uuid := auth.uid();
   v_request_count integer;
@@ -184,7 +184,7 @@ begin
 
   return v_request_count <= p_max_requests;
 end;
-$;
+$$;
 
 revoke all on function public.consume_chat_rate_limit(integer, integer) from public;
 grant execute on function public.consume_chat_rate_limit(integer, integer) to authenticated;
