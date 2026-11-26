@@ -131,7 +131,7 @@ export async function executeApprovedGitHubAction(
       url: typeof contentInfo?.html_url === "string" ? contentInfo.html_url : null,
       number: null,
       message: `Committed ${filePath} to ${branch}.`,
-      commit_sha: commit?.sha ?? null,
+      commit_sha: typeof commit?.sha === "string" ? commit.sha : null,
     };
   }
 
