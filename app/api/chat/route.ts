@@ -82,8 +82,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "AI is not configured. Add the API key to the server environment." }, { status: 503 });
   }
 
+  const admin = createAdminClient();
+
   try {
-    const admin = createAdminClient();
     const { data: allowed, error: rateLimitError } = await admin.rpc(
       "consume_chat_rate_limit",
       { p_user_id: userId, p_max_requests: 20, p_window_seconds: 60 },
