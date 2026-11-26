@@ -8,7 +8,7 @@ type Approval = {
   action_type: string;
   summary: string;
   payload: Record<string, unknown>;
-  status: "pending" | "approved" | "rejected" | "failed" | string;
+  status: "pending" | "approved" | "rejected" | "failed" | "executed" | string;
   created_at: string;
   decided_at?: string | null;
 };
@@ -105,7 +105,7 @@ export default function ApprovalsPanel() {
                   <button onClick={() => void decide(approval.id, "approve")} disabled={busyId === approval.id} className="flex items-center gap-2 rounded-lg bg-violet-300 px-3 py-2 text-xs font-semibold text-[#11111a] transition hover:bg-violet-200 disabled:opacity-50"><Check size={14}/>{busyId === approval.id ? "Saving..." : "Approve proposal"}</button>
                 </div>
               ) : (
-                <p className="mt-4 text-[10px] text-slate-600">Decision recorded. Approval does not execute the action by itself.</p>
+                <p className="mt-4 text-[10px] text-slate-600">{approval.status === "executed" ? "Executed successfully after approval." : approval.status === "rejected" ? "Proposal rejected." : approval.status === "failed" ? "Execution failed. Review the error and check GitHub before retrying." : "Approval recorded; check the connected GitHub repository for the result."}</p>
               )}
             </article>
           ))}
