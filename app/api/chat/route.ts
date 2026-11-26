@@ -6,22 +6,9 @@ import { createClient } from "@/lib/supabase/server";
 export const runtime = "nodejs";
 export const maxDuration = 30;
 
-const MAX_MESSAGES = 20;
 const MAX_MESSAGE_LENGTH = 8_000;
-const MAX_TOTAL_CONTENT_LENGTH = 32_000;
-const MAX_BODY_BYTES = 64 * 1024;
+const MAX_BODY_BYTES = 16 * 1024;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-function isChatMessage(value: unknown): value is ChatMessage {
-  if (!value || typeof value !== "object") return false;
-  const message = value as Record<string, unknown>;
-  return (
-    (message.role === "user" || message.role === "assistant") &&
-    typeof message.content === "string" &&
-    message.content.trim().length > 0 &&
-    message.content.length <= MAX_MESSAGE_LENGTH
-  );
-}
 
 export async function POST(request: Request) {
   if (
@@ -42,7 +29,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Sign in to use your assistant." }, { status: 401 });
     }
     userId = data.user.id;
-
   } catch {
     return NextResponse.json({ error: "Authentication could not be verified." }, { status: 503 });
   }
@@ -70,27 +56,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "The request must contain valid JSON." }, { status: 400 });
   }
 
-  if (!body || typeof body !== "object" || !Array.isArray((body as { messages?: unknown }).messages)) {
-    return NextResponse.json({ error: "A messages array is required." }, { status: 400 });
+  if (!body || typeof body !== "object") {
+    return NextResponse.json({ error: "A message is required." }, { status: 400 });
   }
 
-  const payload = body as { messages: unknown[]; conversationId?: unknown };
-  const messages = payload.messages;
-  const totalLength = messages.reduce(
-    (total, item) => total + (item && typeof item === "object" && typeof (item as Record<string, unknown>).content === "string"
-      ? (item as Record<string, string>).content.length
-      : 0),
-    0,
-  );
-
+  const payload = body as { message?: unknown; conversationId?: unknown };
   if (
-    messages.length === 0 ||
-    messages.length > MAX_MESSAGES ||
-    !messages.every(isChatMessage) ||
-    messages[messages.length - 1]?.role !== "user" ||
-    totalLength > MAX_TOTAL_CONTENT_LENGTH
+    typeof payload.message !== "string" ||
+    !payload.message.trim() ||
+    payload.message.length > MAX_MESSAGE_LENGTH
   ) {
-    return NextResponse.json({ error: "The conversation is invalid or too long." }, { status: 400 });
+    return NextResponse.json({ error: "The message is empty or too long." }, { status: 400 });
   }
 
   if (payload.conversationId !== undefined && (
@@ -119,9 +95,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Usage protection could not be verified." }, { status: 503 });
   }
 
-  let conversationId: string | null = null;
-
   try {
+    let conversationId: string;
+    let history: ChatMessage[] = [];
+
     if (typeof payload.conversationId === "string") {
       const { data: conversation, error } = await supabase
         .from("conversations")
@@ -135,9 +112,19 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "Conversation not found." }, { status: 404 });
       }
       conversationId = conversation.id;
+
+      const { data: previousMessages, error: historyError } = await supabase
+        .from("messages")
+        .select("role, content")
+        .eq("conversation_id", conversationId)
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(19);
+
+      if (historyError) throw historyError;
+      history = (previousMessages ?? []).reverse() as ChatMessage[];
     } else {
-      const firstUserMessage = messages.find((message) => (message as ChatMessage).role === "user") as ChatMessage;
-      const title = firstUserMessage.content.trim().slice(0, 60) || "New conversation";
+      const title = payload.message.trim().slice(0, 60) || "New conversation";
       const { data: conversation, error } = await supabase
         .from("conversations")
         .insert({ user_id: userId, title })
@@ -148,14 +135,16 @@ export async function POST(request: Request) {
       conversationId = conversation.id;
     }
 
-    const latestUserMessage = messages[messages.length - 1] as ChatMessage;
+    const userMessage: ChatMessage = { role: "user", content: payload.message.trim() };
+    const messages = [...history, userMessage];
+
     const { error: userMessageError } = await supabase
       .from("messages")
       .insert({
         conversation_id: conversationId,
         user_id: userId,
         role: "user",
-        content: latestUserMessage.content,
+        content: userMessage.content,
       });
 
     if (userMessageError) throw userMessageError;
@@ -169,6 +158,7 @@ export async function POST(request: Request) {
       .limit(8);
 
     if (memoryError) throw memoryError;
+
     const reply = await askAgent(messages, (savedMemories ?? []) as SavedMemory[]);
     if (!reply) {
       return NextResponse.json({ error: "The assistant returned an empty response. Try again.", conversationId }, { status: 502 });
@@ -197,7 +187,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ reply, conversationId });
   } catch {
     return NextResponse.json(
-      { error: "The assistant could not complete or save this response. Try again.", conversationId },
+      { error: "The assistant could not complete or save this response. Try again.", conversationId: payload.conversationId ?? null },
       { status: 502 },
     );
   }
