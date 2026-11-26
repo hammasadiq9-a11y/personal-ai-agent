@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
-import { hashPayload , containsCredentialLikeField } from "@/lib/security/payload-hash";
+import { containsCredentialLikeField, hashPayload } from "@/lib/security/payload-hash";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
-
 
 export async function GET() {
   try {
@@ -67,7 +66,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "The proposal payload must be an object." }, { status: 400 });
     }
 
-    if (containsCredentialLikeField(payload)) {\n      return NextResponse.json({ error: "Approval payloads must not contain credentials or secrets." }, { status: 400 });\n    }\n\n    const payloadHash = hashPayload(payload);
+    if (containsCredentialLikeField(payload)) {
+      return NextResponse.json({ error: "Approval payloads must not contain credentials or secrets." }, { status: 400 });
+    }
+
+    const payloadHash = hashPayload(payload);
     const admin = createAdminClient();
     const { data, error } = await admin
       .from("approvals")
@@ -78,7 +81,7 @@ export async function POST(request: Request) {
         payload,
         payload_hash: payloadHash,
       })
-      .select("id, action_type, summary, payload, payload_hash, status, created_at")
+      .select("id, action_type, summary, payload, status, created_at")
       .single();
 
     if (error) throw error;
