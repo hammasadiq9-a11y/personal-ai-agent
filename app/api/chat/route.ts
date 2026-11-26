@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Database authentication is not fully configured yet." }, { status: 503 });
   }
 
-  let supabase;
+  let supabase: Awaited<ReturnType<typeof createClient>>;
   let userId: string;
 
   try {
