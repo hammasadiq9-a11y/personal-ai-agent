@@ -309,6 +309,7 @@ export async function POST(request: Request) {
     }
 
     if (toolResults.length) {
+      toolResults.push({ tool: "initial_response", content: initialResult.reply });
       const finalResult = await askAgent(
         messages,
         (savedMemories ?? []) as SavedMemory[],
