@@ -59,7 +59,7 @@ Requirements: Node.js 20.9+ and npm.
 - Keep API keys in server-side environment variables. Never commit `.env.local`.
 - The chat endpoint verifies the signed-in user and validates message shape, count, total content, and request size.
 - Chat turns are stored in owner-scoped conversations. Assistant messages are inserted through a server-only service-role client; browser clients cannot create assistant messages. OpenAI requests use `store: false`.
-- The migration has not been applied to a live database or tested against real users. Persistent rate limits, research/GitHub integrations, and action execution remain unimplemented. Do not expose this as a public multi-user service until these controls are added and tested.
+- The migration has not been applied to a live database or tested against real users. The rate-limit function and memory storage are included in the migration but still need live-database testing. Research/GitHub integrations and action execution remain unimplemented. Do not expose this as a public multi-user service until these controls are added and tested.
 
 ## Roadmap
 
