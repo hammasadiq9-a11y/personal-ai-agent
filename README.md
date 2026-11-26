@@ -74,7 +74,7 @@ For hosted web search, switch to a supported model such as `gpt-6.2-astra` and s
 2. Connect Supabase and verify account creation, sign-in, and RLS isolation
 3. Add document retrieval and task due-date workflows
 4. Expand the GitHub action allowlist after security and integration testing
-6. Tests, observability, and deployment hardening
+5. Tests, observability, and deployment hardening
 
 ## Architecture and security notes
 
