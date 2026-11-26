@@ -44,9 +44,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Sign in to save memory." }, { status: 401 });
     }
 
+    const raw = await request.text();
+    if (new TextEncoder().encode(raw).byteLength > 12 * 1024) {
+      return NextResponse.json({ error: "The memory request is too large." }, { status: 413 });
+    }
+
     let body: unknown;
     try {
-      body = await request.json();
+      body = JSON.parse(raw);
     } catch {
       return NextResponse.json({ error: "The request must contain valid JSON." }, { status: 400 });
     }
