@@ -103,7 +103,7 @@ export default function ApprovalsPanel() {
               {approval.status === "pending" ? (
                 <div className="mt-4 flex flex-wrap justify-end gap-2">
                   <button onClick={() => void decide(approval.id, "reject")} disabled={busyId === approval.id} className="flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-xs text-slate-300 transition hover:bg-white/[0.05] disabled:opacity-50"><X size={14}/> Reject</button>
-                  <button onClick={() => void decide(approval.id, "approve")} disabled={busyId === approval.id} className="flex items-center gap-2 rounded-lg bg-violet-300 px-3 py-2 text-xs font-semibold text-[#11111a] transition hover:bg-violet-200 disabled:opacity-50"><Check size={14}/>{busyId === approval.id ? "Saving..." : "Approve proposal"}</button>
+                  <button onClick={() => void decide(approval.id, "approve")} disabled={busyId === approval.id} className="flex items-center gap-2 rounded-lg bg-violet-300 px-3 py-2 text-xs font-semibold text-[#11111a] transition hover:bg-violet-200 disabled:opacity-50"><Check size={14}/>{busyId === approval.id ? "Saving..." : "Approve & execute"}</button>
                 </div>
               ) : (
                 <p className="mt-4 text-[10px] text-slate-600">{approval.status === "executed" ? "Executed successfully after approval." : approval.status === "rejected" ? "Proposal rejected." : approval.status === "failed" ? "Execution failed. Review the error and check GitHub before retrying." : "Approval recorded; check the connected GitHub repository for the result."}{approval.execution_result?.url && <a href={approval.execution_result.url} target="_blank" rel="noreferrer" className="ml-2 text-violet-200 underline">Open result</a>}</p>
