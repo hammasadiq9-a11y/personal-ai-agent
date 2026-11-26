@@ -96,7 +96,7 @@ export default function ApprovalsPanel() {
             <article key={approval.id} className="rounded-2xl border border-white/[0.08] bg-white/[0.025] p-5">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="text-[10px] font-medium uppercase tracking-[0.16em] text-violet-200">{approval.action_type}</span>
-                <span className={`rounded-full px-2.5 py-1 text-[10px] ${approval.status === "pending" ? "bg-amber-300/10 text-amber-200" : approval.status === "approved" ? "bg-emerald-300/10 text-emerald-200" : "bg-white/[0.06] text-slate-400"}`}>{approval.status}</span>
+                <span className={`rounded-full px-2.5 py-1 text-[10px] ${approval.status === "pending" ? "bg-amber-300/10 text-amber-200" : approval.status === "approved" || approval.status === "executed" ? "bg-emerald-300/10 text-emerald-200" : "bg-white/[0.06] text-slate-400"}`}>{approval.status}</span>
               </div>
               <h3 className="mt-3 text-sm font-medium text-slate-200">{approval.summary}</h3>
               <pre className="mt-4 max-h-48 overflow-auto rounded-xl border border-white/[0.06] bg-[#090d14] p-3 text-[10px] leading-5 text-slate-400">{JSON.stringify(approval.payload, null, 2)}</pre>
