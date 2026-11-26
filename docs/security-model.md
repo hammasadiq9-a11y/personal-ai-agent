@@ -39,5 +39,5 @@ Alternative terminal paths are `rejected`, `expired`, and `failed`. A decision m
 - No unrestricted terminal or local computer control.
 - No background agent with persistent write access.
 - No financial transactions or purchases.
-- No automatic messages, publishing, deployment, deletion, or permission changes. GitHub branch, issue, and pull-request creation are the only external writes enabled, and each requires a payload-hashed approval.
+- No automatic messages, publishing, deployment, deletion, or permission changes. GitHub branch, issue, and pull-request creation are the only external writes enabled, and each requires a payload-hashed approval and a separate least-privilege write token.
 - No browser-visible service-role keys.
