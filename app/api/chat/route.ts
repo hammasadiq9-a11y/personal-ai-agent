@@ -237,8 +237,24 @@ export async function POST(request: Request) {
         const title = typeof args.title === "string" ? args.title.trim() : "";
         const description = typeof args.description === "string" ? args.description.trim() : "";
         const priority = ["low", "normal", "high", "urgent"].includes(String(args.priority)) ? String(args.priority) : "normal";
-        const projectId = typeof args.projectId === "string" && args.projectId ? args.projectId : null;
+        let projectId = typeof args.projectId === "string" && args.projectId ? args.projectId : null;
+        const projectName = typeof args.projectName === "string" ? args.projectName.trim() : "";
         const dueAt = typeof args.dueAt === "string" && args.dueAt ? new Date(args.dueAt) : null;
+
+        if (projectName) {
+          const { data: matchedProject, error: projectLookupError } = await supabase
+            .from("projects")
+            .select("id")
+            .eq("user_id", userId)
+            .eq("name", projectName)
+            .maybeSingle();
+
+          if (projectLookupError || !matchedProject) {
+            toolResults.push({ tool: "create_task", error: `Could not find a unique project named "${projectName}".` });
+            continue;
+          }
+          projectId = matchedProject.id;
+        }
 
         if (
           !title ||
