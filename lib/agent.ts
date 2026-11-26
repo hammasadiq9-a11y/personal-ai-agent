@@ -12,6 +12,7 @@ export type MemoryWrite = {
   category: "preference" | "goal" | "project" | "workflow" | "fact" | "other";
 };
 export type GitHubReadRequest = { name: string; arguments: Record<string, unknown> };
+export type TaskRequest = { name: string; arguments: Record<string, unknown> };
 
 const SYSTEM_INSTRUCTIONS = `You are the central assistant for a personal AI workspace.
 
@@ -62,6 +63,38 @@ const tools: OpenAI.Responses.Tool[] = [
         category: { type: "string", enum: ["preference", "goal", "project", "workflow", "fact", "other"] },
       },
       required: ["title", "content", "category"],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+  {
+    type: "function",
+    name: "create_task",
+    description: "Create a task in the user's private workspace when they explicitly ask to add or track a task. This only creates an internal task record.",
+    parameters: {
+      type: "object",
+      properties: {
+        title: { type: "string" },
+        description: { type: "string" },
+        priority: { type: "string", enum: ["low", "normal", "high", "urgent"] },
+        projectId: { type: "string", description: "Project UUID, or an empty string if the task is not linked to a project." },
+        dueAt: { type: "string", description: "ISO 8601 due date/time, or an empty string if no due date was requested." },
+      },
+      required: ["title", "description", "priority", "projectId", "dueAt"],
+      additionalProperties: false,
+    },
+    strict: true,
+  },
+  {
+    type: "function",
+    name: "list_tasks",
+    description: "List the user's tasks when they ask to review or find their tasks.",
+    parameters: {
+      type: "object",
+      properties: {
+        status: { type: "string", enum: ["all", "todo", "in_progress", "blocked", "done", "cancelled"] },
+      },
+      required: ["status"],
       additionalProperties: false,
     },
     strict: true,
@@ -150,6 +183,7 @@ export async function askAgent(
   approvalProposals: ApprovalProposal[];
   memoryWrites: MemoryWrite[];
   githubRequests: GitHubReadRequest[];
+  taskRequests: TaskRequest[];
 }> {
   if (!client) {
     throw new Error("AI is not configured yet. Add OPENAI_API_KEY to the server environment.");
@@ -175,6 +209,7 @@ export async function askAgent(
   const approvalProposals: ApprovalProposal[] = [];
   const memoryWrites: MemoryWrite[] = [];
   const githubRequests: GitHubReadRequest[] = [];
+  const taskRequests: TaskRequest[] = [];
 
   for (const item of response.output) {
     if (item.type !== "function_call") continue;
@@ -208,6 +243,8 @@ export async function askAgent(
           content: args.content,
           category: args.category as MemoryWrite["category"],
         });
+      } else if (item.name === "create_task" || item.name === "list_tasks") {
+        taskRequests.push({ name: item.name, arguments: args });
       } else if (item.name.startsWith("github_")) {
         githubRequests.push({ name: item.name, arguments: args });
       }
@@ -217,7 +254,7 @@ export async function askAgent(
   }
 
   const reply = response.output_text.trim() || (
-    approvalProposals.length || memoryWrites.length || githubRequests.length
+    approvalProposals.length || memoryWrites.length || githubRequests.length || taskRequests.length
       ? "I've prepared the requested workspace operation. Here are the results."
       : "I couldn't produce a response. Please try again."
   );
@@ -227,5 +264,6 @@ export async function askAgent(
     approvalProposals: approvalProposals.slice(0, 3),
     memoryWrites: memoryWrites.slice(0, 3),
     githubRequests: githubRequests.slice(0, 3),
+    taskRequests: taskRequests.slice(0, 5),
   };
 }
