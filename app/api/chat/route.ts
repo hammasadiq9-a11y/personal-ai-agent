@@ -4,6 +4,7 @@ import { containsCredentialLikeField, hashPayload } from "@/lib/security/payload
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { runGitHubTool } from "@/lib/tools/github";
+import { isSupportedGitHubAction } from "@/lib/tools/github-actions";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -323,7 +324,7 @@ export async function POST(request: Request) {
     for (const proposal of approvalProposals as ApprovalProposal[]) {
       const payloadSize = new TextEncoder().encode(JSON.stringify(proposal.payload)).byteLength;
       if (
-        !/^[a-z][a-z0-9_.-]{1,79}$/.test(proposal.actionType) ||
+        !isSupportedGitHubAction(proposal.actionType) ||
         !proposal.summary.trim() ||
         proposal.summary.length > 500 ||
         payloadSize > 16 * 1024 ||
