@@ -328,7 +328,7 @@ export async function POST(request: Request) {
         !isSupportedGitHubAction(proposal.actionType) ||
         !proposal.summary.trim() ||
         proposal.summary.length > 500 ||
-        payloadSize > 16 * 1024 ||
+        payloadSize > 40 * 1024 ||
         containsCredentialLikeField(proposal.payload)
       ) {
         continue;
