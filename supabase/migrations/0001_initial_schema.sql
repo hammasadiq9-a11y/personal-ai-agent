@@ -7,7 +7,8 @@ create extension if not exists pgcrypto;
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
-as $$
+set search_path = ''
+as $
 begin
   new.updated_at = now();
   return new;
@@ -38,7 +39,7 @@ begin
 end;
 $$;
 
-revoke all on function public.handle_new_user() from public;
+revoke all on function public.handle_new_user() from public, anon, authenticated;
 
 create trigger on_auth_user_created
 after insert on auth.users
@@ -120,6 +121,10 @@ create table public.memories (
 
 create index memories_user_updated_idx on public.memories(user_id, pinned desc, updated_at desc);
 create index memories_search_idx on public.memories using gin(search_document);
+create index memories_project_user_idx on public.memories(project_id, user_id);
+create index messages_conversation_user_idx on public.messages(conversation_id, user_id);
+create index messages_user_id_idx on public.messages(user_id);
+create index tasks_project_user_idx on public.tasks(project_id, user_id);
 
 create table public.approvals (
   id uuid primary key default gen_random_uuid(),
@@ -188,7 +193,7 @@ begin
 end;
 $$;
 
-revoke all on function public.consume_chat_rate_limit(integer, integer) from public;
+revoke all on function public.consume_chat_rate_limit(integer, integer) from public, anon;
 grant execute on function public.consume_chat_rate_limit(integer, integer) to authenticated;
 
 create table public.audit_logs (
