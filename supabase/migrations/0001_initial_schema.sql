@@ -110,6 +110,59 @@ create table public.approvals (
   check ((status not in ('approved', 'rejected')) or decided_at is not null)
 );
 
+create table public.api_rate_limits (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  window_started_at timestamptz not null default now(),
+  request_count integer not null default 0 check (request_count >= 0)
+);
+
+alter table public.api_rate_limits enable row level security;
+
+create or replace function public.consume_chat_rate_limit(
+  p_max_requests integer,
+  p_window_seconds integer
+)
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $
+declare
+  v_user_id uuid := auth.uid();
+  v_request_count integer;
+begin
+  if v_user_id is null then
+    return false;
+  end if;
+
+  if p_max_requests < 1 or p_max_requests > 1000
+    or p_window_seconds < 1 or p_window_seconds > 3600 then
+    raise exception 'Invalid rate limit parameters';
+  end if;
+
+  insert into public.api_rate_limits (user_id, window_started_at, request_count)
+  values (v_user_id, now(), 1)
+  on conflict (user_id) do update
+  set
+    window_started_at = case
+      when now() >= public.api_rate_limits.window_started_at + make_interval(secs => p_window_seconds)
+      then now()
+      else public.api_rate_limits.window_started_at
+    end,
+    request_count = case
+      when now() >= public.api_rate_limits.window_started_at + make_interval(secs => p_window_seconds)
+      then 1
+      else public.api_rate_limits.request_count + 1
+    end
+  returning request_count into v_request_count;
+
+  return v_request_count <= p_max_requests;
+end;
+$;
+
+revoke all on function public.consume_chat_rate_limit(integer, integer) from public;
+grant execute on function public.consume_chat_rate_limit(integer, integer) to authenticated;
+
 create table public.audit_logs (
   id bigint generated always as identity primary key,
   user_id uuid not null references auth.users(id) on delete cascade,
