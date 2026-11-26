@@ -3,7 +3,7 @@ import "server-only";
 type GitHubArgs = Record<string, unknown>;
 
 function validateRepoPart(value: unknown): value is string {
-  return typeof value === "string" && /^[A-Za-z0-9_.-]{1,100}$/.test(value);
+  return typeof value === "string" && value !== "." && value !== ".." && /^[A-Za-z0-9_.-]{1,100}$/.test(value);
 }
 
 async function githubGet(path: string): Promise<unknown> {
