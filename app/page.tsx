@@ -14,11 +14,7 @@ import {
 
 type Message = { role: "user" | "assistant"; content: string };
 type Conversation = { id: string; title: string; updated_at: string };
-const projects = [
-  { name: "Novux", detail: "AI website builder", icon: Code2 },
-  { name: "ReleasePilot", detail: "AI code review", icon: ShieldCheck },
-  { name: "Axiom", detail: "Personal AI operating system", icon: Bot },
-];
+type ProjectSummary = { id: string; name: string; description: string };
 
 const suggestions = [
   { icon: Code2, title: "Help me build", prompt: "Help me plan and build a software feature. Start by asking what outcome I need." },
@@ -30,6 +26,7 @@ const suggestions = [
 export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [projects, setProjects] = useState<ProjectSummary[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -42,6 +39,18 @@ export default function Home() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
+
+  useEffect(() => {
+    let active = true;
+    fetch("/api/projects")
+      .then(async (response) => {
+        if (!response.ok) return null;
+        return await response.json() as { projects: ProjectSummary[] };
+      })
+      .then((data) => { if (active && data) setProjects(data.projects ?? []); })
+      .catch(() => { /* Project navigation remains available if loading fails. */ });
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -182,7 +191,7 @@ export default function Home() {
           <div className="mt-8">
             <div className="flex items-center justify-between px-3"><p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-600">Your projects</p><button onClick={() => setActiveView("Projects")} className="text-slate-600 hover:text-slate-300" aria-label="View projects"><Plus size={14}/></button></div>
             <div className="mt-3 space-y-1">
-              {projects.map((project) => <button key={project.name} onClick={() => setActiveView("Projects")} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left hover:bg-white/[0.04]"><project.icon size={15} className="text-slate-500"/><span className="min-w-0 flex-1"><span className="block text-xs text-slate-300">{project.name}</span><span className="block truncate text-[10px] text-slate-600">{project.detail}</span></span><span className="h-1.5 w-1.5 rounded-full bg-slate-600"/></button>)}
+              {projects.length === 0 ? <p className="px-3 py-2 text-[11px] text-slate-600">Your saved projects will appear here.</p> : projects.slice(0, 6).map((project) => <button key={project.id} onClick={() => setActiveView("Projects")} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left hover:bg-white/[0.04]"><FolderKanban size={15} className="text-slate-500"/><span className="min-w-0 flex-1"><span className="block text-xs text-slate-300">{project.name}</span><span className="block truncate text-[10px] text-slate-600">{project.description || "No description"}</span></span><span className="h-1.5 w-1.5 rounded-full bg-slate-600"/></button>)}
             </div>
           </div>
 
