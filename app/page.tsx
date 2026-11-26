@@ -9,7 +9,7 @@ import ProjectsPanel from "@/components/projects-panel";
 import {
   ArrowUp, Bot, ChevronDown, CircleHelp, Code2,
   FileText, FolderKanban, Globe2, GraduationCap, Menu, Plus,
-  Search, ShieldCheck, Sparkles, Terminal, User, X, LogOut, ListTodo,
+  Search, ShieldCheck, Sparkles, User, X, LogOut, ListTodo,
 } from "lucide-react";
 
 type Message = { role: "user" | "assistant"; content: string };
