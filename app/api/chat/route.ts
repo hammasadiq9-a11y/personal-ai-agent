@@ -37,30 +37,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Authentication could not be verified." }, { status: 503 });
   }
 
-  const declaredLength = Number(request.headers.get("content-length") || 0);
-  if (declaredLength > MAX_BODY_BYTES) {
-    return NextResponse.json({ error: "The request is too large." }, { status: 413 });
+  const parsedBody = await readJsonBody(request, MAX_BODY_BYTES);
+  if (!parsedBody.ok) {
+    return NextResponse.json({ error: parsedBody.error }, { status: parsedBody.status });
   }
+  const body = parsedBody.value;
 
-  let rawBody: string;
-  try {
-    rawBody = await request.text();
-  } catch {
-    return NextResponse.json({ error: "The request body could not be read." }, { status: 400 });
-  }
-
-  if (new TextEncoder().encode(rawBody).byteLength > MAX_BODY_BYTES) {
-    return NextResponse.json({ error: "The request is too large." }, { status: 413 });
-  }
-
-  let body: unknown;
-  try {
-    body = JSON.parse(rawBody);
-  } catch {
-    return NextResponse.json({ error: "The request must contain valid JSON." }, { status: 400 });
-  }
-
-  if (!body || typeof body !== "object") {
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
     return NextResponse.json({ error: "A message is required." }, { status: 400 });
   }
 
