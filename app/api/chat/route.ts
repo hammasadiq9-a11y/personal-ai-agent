@@ -103,6 +103,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "AI is not configured. Add the API key to the server environment." }, { status: 503 });
   }
 
+  try {
     const { data: allowed, error: rateLimitError } = await supabase.rpc(
       "consume_chat_rate_limit",
       { p_max_requests: 20, p_window_seconds: 60 },
@@ -114,6 +115,9 @@ export async function POST(request: Request) {
     if (!allowed) {
       return NextResponse.json({ error: "You have reached the short-term usage limit. Wait a minute and try again." }, { status: 429 });
     }
+  } catch {
+    return NextResponse.json({ error: "Usage protection could not be verified." }, { status: 503 });
+  }
 
   let conversationId: string | null = null;
 
