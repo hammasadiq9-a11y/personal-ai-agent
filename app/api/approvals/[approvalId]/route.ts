@@ -121,11 +121,11 @@ export async function PATCH(
       const result = await executeApprovedGitHubAction(approval.action_type, approval.payload as Record<string, unknown>);
       const { data, error } = await admin
         .from("approvals")
-        .update({ status: "executed", executed_at: new Date().toISOString() })
+        .update({ status: "executed", executed_at: new Date().toISOString(), execution_result: result })
         .eq("id", approvalId)
         .eq("user_id", authData.user.id)
         .eq("status", "approved")
-        .select("id, action_type, summary, status, decided_at, executed_at")
+        .select("id, action_type, summary, status, decided_at, executed_at, execution_result")
         .maybeSingle();
 
       if (error) throw error;
