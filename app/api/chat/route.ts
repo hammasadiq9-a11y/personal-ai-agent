@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { askAgent, type ApprovalProposal, type ChatMessage, type GitHubReadRequest, type MemoryWrite, type SavedMemory, type TaskRequest } from "@/lib/agent";
+import { askAgent, type ApprovalProposal, type ChatMessage, type GitHubReadRequest, type MemoryWrite, type ProjectRequest, type SavedMemory, type TaskRequest } from "@/lib/agent";
 import { containsCredentialLikeField, hashPayload } from "@/lib/security/payload-hash";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -169,6 +169,7 @@ export async function POST(request: Request) {
     const approvalProposals = initialResult.approvalProposals;
     const memoryWrites = initialResult.memoryWrites;
     const taskIds: string[] = [];
+    const projectIds: string[] = [];
     const toolResults: unknown[] = [];
 
     if (initialResult.githubRequests.length) {
@@ -187,6 +188,46 @@ export async function POST(request: Request) {
       );
 
       toolResults.push(...githubResults);
+    }
+
+    for (const projectCall of initialResult.projectRequests as ProjectRequest[]) {
+      if (projectCall.name === "create_project") {
+        const name = typeof projectCall.arguments.name === "string" ? projectCall.arguments.name.trim() : "";
+        const description = typeof projectCall.arguments.description === "string" ? projectCall.arguments.description.trim() : "";
+
+        if (!name || name.length > 120 || description.length > 2000) {
+          toolResults.push({ tool: "create_project", error: "The project details were invalid and were not saved." });
+          continue;
+        }
+
+        const { data: project, error: projectError } = await supabase
+          .from("projects")
+          .insert({ user_id: userId, name, description })
+          .select("id, name, description, status")
+          .single();
+
+        if (projectError) {
+          toolResults.push({ tool: "create_project", error: "The project could not be saved." });
+          continue;
+        }
+
+        projectIds.push(project.id);
+        toolResults.push({ tool: "create_project", project });
+      } else if (projectCall.name === "list_projects") {
+        const { data: projects, error: projectsError } = await supabase
+          .from("projects")
+          .select("id, name, description, status, updated_at")
+          .eq("user_id", userId)
+          .neq("status", "archived")
+          .order("updated_at", { ascending: false })
+          .limit(20);
+
+        if (projectsError) {
+          toolResults.push({ tool: "list_projects", error: "The project list could not be loaded." });
+          continue;
+        }
+        toolResults.push({ tool: "list_projects", projects: projects ?? [] });
+      }
     }
 
     for (const taskCall of initialResult.taskRequests as TaskRequest[]) {
@@ -342,6 +383,7 @@ export async function POST(request: Request) {
     if (approvalIds.length) notices.push(`I prepared ${approvalIds.length} proposal(s) for review in the Approvals section. Nothing has been executed.`);
     if (memoryIds.length) notices.push(`I saved ${memoryIds.length} note(s) to Knowledge, as requested.`);
     if (taskIds.length) notices.push(`I created ${taskIds.length} task(s) in your workspace.`);
+    if (projectIds.length) notices.push(`I created ${projectIds.length} project(s) in your workspace.`);
     const assistantContent = notices.length ? `${reply}\n\n${notices.join(" ")}` : reply;
 
     const { error: assistantMessageError } = await admin
@@ -363,7 +405,7 @@ export async function POST(request: Request) {
 
     if (updateError) throw updateError;
 
-    return NextResponse.json({ reply: assistantContent, conversationId, approvalIds, memoryIds, taskIds });
+    return NextResponse.json({ reply: assistantContent, conversationId, approvalIds, memoryIds, taskIds, projectIds });
   } catch {
     return NextResponse.json(
       { error: "The assistant could not complete or save this response. Try again.", conversationId: activeConversationId },
