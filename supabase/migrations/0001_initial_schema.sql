@@ -130,6 +130,7 @@ create table public.approvals (
   expires_at timestamptz,
   decided_at timestamptz,
   executed_at timestamptz,
+  execution_result jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   check ((status not in ('approved', 'rejected')) or decided_at is not null)
