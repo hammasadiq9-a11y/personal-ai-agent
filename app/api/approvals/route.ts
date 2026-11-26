@@ -17,7 +17,7 @@ export async function GET() {
 
     const { data, error } = await supabase
       .from("approvals")
-      .select("id, action_type, summary, payload, status, expires_at, decided_at, created_at")
+      .select("id, action_type, summary, payload, status, expires_at, decided_at, executed_at, execution_result, created_at")
       .eq("user_id", authData.user.id)
       .in("status", ["pending", "approved", "rejected", "failed", "executed"])
       .order("created_at", { ascending: false })
