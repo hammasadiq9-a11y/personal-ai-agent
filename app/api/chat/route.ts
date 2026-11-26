@@ -189,6 +189,7 @@ export async function POST(request: Request) {
           summary: proposal.summary.trim(),
           payload: proposal.payload,
           payload_hash: payloadHash,
+          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
         })
         .select("id")
         .single();
