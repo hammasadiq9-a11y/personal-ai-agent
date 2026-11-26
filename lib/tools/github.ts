@@ -20,7 +20,7 @@ async function githubGet(path: string): Promise<unknown> {
       "X-GitHub-Api-Version": "2022-11-28",
     },
     cache: "no-store",
-    signal: AbortSignal.timeout(12_000),
+    signal: AbortSignal.timeout(8_000),
   });
 
   const raw = await response.text();
