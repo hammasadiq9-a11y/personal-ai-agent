@@ -1,18 +1,10 @@
-import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
+import { hashPayload , containsCredentialLikeField } from "@/lib/security/payload-hash";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
-function stableStringify(value: unknown): string {
-  if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
-  if (value && typeof value === "object") {
-    const record = value as Record<string, unknown>;
-    return `{${Object.keys(record).sort().map((key) => `${JSON.stringify(key)}:${stableStringify(record[key])}`).join(",")}}`;
-  }
-  return JSON.stringify(value) ?? "null";
-}
 
 export async function GET() {
   try {
@@ -25,7 +17,7 @@ export async function GET() {
 
     const { data, error } = await supabase
       .from("approvals")
-      .select("id, action_type, summary, payload, payload_hash, status, expires_at, decided_at, created_at")
+      .select("id, action_type, summary, payload, status, expires_at, decided_at, created_at")
       .eq("user_id", authData.user.id)
       .in("status", ["pending", "approved", "rejected", "failed"])
       .order("created_at", { ascending: false })
@@ -75,7 +67,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "The proposal payload must be an object." }, { status: 400 });
     }
 
-    const payloadHash = createHash("sha256").update(stableStringify(payload)).digest("hex");
+    if (containsCredentialLikeField(payload)) {\n      return NextResponse.json({ error: "Approval payloads must not contain credentials or secrets." }, { status: 400 });\n    }\n\n    const payloadHash = hashPayload(payload);
     const admin = createAdminClient();
     const { data, error } = await admin
       .from("approvals")
