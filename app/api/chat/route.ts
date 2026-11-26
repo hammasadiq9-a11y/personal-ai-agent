@@ -83,9 +83,10 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { data: allowed, error: rateLimitError } = await supabase.rpc(
+    const admin = createAdminClient();
+    const { data: allowed, error: rateLimitError } = await admin.rpc(
       "consume_chat_rate_limit",
-      { p_max_requests: 20, p_window_seconds: 60 },
+      { p_user_id: userId, p_max_requests: 20, p_window_seconds: 60 },
     );
 
     if (rateLimitError) {
@@ -318,7 +319,6 @@ export async function POST(request: Request) {
       );
       reply = finalResult.reply;
     }
-    const admin = createAdminClient();
     const approvalIds: string[] = [];
     const memoryIds: string[] = [];
 
