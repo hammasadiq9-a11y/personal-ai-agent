@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { readJsonBody } from "@/lib/http/read-json";
 import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -19,17 +20,10 @@ export async function PATCH(
     const { data: authData, error: authError } = await supabase.auth.getUser();
     if (authError || !authData.user) return NextResponse.json({ error: "Sign in to update this task." }, { status: 401 });
 
-    const raw = await request.text();
-    if (new TextEncoder().encode(raw).byteLength > 8 * 1024) return NextResponse.json({ error: "The task update is too large." }, { status: 413 });
-
-    let body: unknown;
-    try {
-      body = JSON.parse(raw);
-    } catch {
-      return NextResponse.json({ error: "The request must contain valid JSON." }, { status: 400 });
-    }
-
-    if (!body || typeof body !== "object") return NextResponse.json({ error: "Task changes are required." }, { status: 400 });
+    const parsedBody = await readJsonBody(request, 8 * 1024);
+    if (!parsedBody.ok) return NextResponse.json({ error: parsedBody.error }, { status: parsedBody.status });
+    const body = parsedBody.value;
+    if (!body || typeof body !== "object" || Array.isArray(body)) return NextResponse.json({ error: "Task changes are required." }, { status: 400 });
     const input = body as Record<string, unknown>;
     const update: Record<string, unknown> = {};
 
