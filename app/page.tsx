@@ -2,7 +2,7 @@
 
 import { FormEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
 import {
-  ArrowUp, Bot, Check, ChevronDown, CircleHelp, Code2, Command,
+  ArrowUp, Bot, ChevronDown, CircleHelp, Code2,
   FileText, FolderKanban, Globe2, GraduationCap, Menu, Plus,
   Search, Settings2, ShieldCheck, Sparkles, Terminal, User, X,
 } from "lucide-react";
@@ -30,7 +30,6 @@ export default function Home() {
   const [error, setError] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeView, setActiveView] = useState("Assistant");
-  const [history, setHistory] = useState<Message[][]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -77,7 +76,6 @@ export default function Home() {
   }
 
   function newChat() {
-    if (messages.length) setHistory((previous) => [messages, ...previous].slice(0, 8));
     setMessages([]);
     setError("");
     setInput("");
