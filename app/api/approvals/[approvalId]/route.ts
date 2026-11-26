@@ -1,18 +1,10 @@
-import { createHash } from "node:crypto";
 import { NextResponse } from "next/server";
+import { hashPayload } from "@/lib/security/payload-hash";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
-function stableStringify(value: unknown): string {
-  if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
-  if (value && typeof value === "object") {
-    const record = value as Record<string, unknown>;
-    return `{${Object.keys(record).sort().map((key) => `${JSON.stringify(key)}:${stableStringify(record[key])}`).join(",")}}`;
-  }
-  return JSON.stringify(value) ?? "null";
-}
 
 export async function PATCH(
   request: Request,
@@ -60,7 +52,7 @@ export async function PATCH(
       return NextResponse.json({ error: "This approval has already been decided." }, { status: 409 });
     }
 
-    const currentHash = createHash("sha256").update(stableStringify(approval.payload)).digest("hex");
+    const currentHash = hashPayload(approval.payload);
     if (currentHash !== approval.payload_hash) {
       return NextResponse.json({ error: "The proposal changed. A new approval is required." }, { status: 409 });
     }
