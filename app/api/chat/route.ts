@@ -42,6 +42,18 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Sign in to use your assistant." }, { status: 401 });
     }
     userId = data.user.id;
+
+    const { data: allowed, error: rateLimitError } = await supabase.rpc(
+      "consume_chat_rate_limit",
+      { p_max_requests: 20, p_window_seconds: 60 },
+    );
+
+    if (rateLimitError) {
+      return NextResponse.json({ error: "Usage protection is not configured. Apply the database migration." }, { status: 503 });
+    }
+    if (!allowed) {
+      return NextResponse.json({ error: "You have reached the short-term usage limit. Wait a minute and try again." }, { status: 429 });
+    }
   } catch {
     return NextResponse.json({ error: "Authentication could not be verified." }, { status: 503 });
   }
