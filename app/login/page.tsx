@@ -45,7 +45,7 @@ export default function LoginPage() {
       <section className="w-full max-w-md">
         <div className="mb-8 flex items-center justify-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-violet-300/20 bg-violet-400/10 text-violet-200"><Sparkles size={20}/></div>
-          <div><p className="text-sm font-semibold tracking-[0.18em]">SIDEKICK</p><p className="mt-1 text-[10px] tracking-[0.2em] text-slate-500">PERSONAL AI WORKSPACE</p></div>
+          <div><p className="text-sm font-semibold tracking-[0.18em]">PERSONAL AI</p><p className="mt-1 text-[10px] tracking-[0.2em] text-slate-500">PERSONAL AI WORKSPACE</p></div>
         </div>
 
         <div className="rounded-3xl border border-white/10 bg-[#10151f] p-7 shadow-2xl shadow-black/30 sm:p-9">
