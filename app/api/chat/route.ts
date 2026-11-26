@@ -95,6 +95,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Usage protection could not be verified." }, { status: 503 });
   }
 
+  let activeConversationId: string | null = null;
+
   try {
     let conversationId: string;
     let history: ChatMessage[] = [];
@@ -134,6 +136,7 @@ export async function POST(request: Request) {
       if (error) throw error;
       conversationId = conversation.id;
     }
+    activeConversationId = conversationId;
 
     const userMessage: ChatMessage = { role: "user", content: payload.message.trim() };
     const messages = [...history, userMessage];
