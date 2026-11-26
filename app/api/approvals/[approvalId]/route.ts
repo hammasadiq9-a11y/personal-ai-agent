@@ -5,7 +5,6 @@ import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 
-
 export async function PATCH(
   request: Request,
   context: { params: Promise<{ approvalId: string }> },
