@@ -4,14 +4,14 @@ Sidekick is a personal AI workspace for software development, research, learning
 
 ## Current status
 
-**Foundation milestone in progress.** The repository contains the initial Next.js application, a central OpenAI Responses API service, a chat interface, request validation, and a Supabase SQL migration defining user-owned conversations, messages, projects, tasks, approvals, and audit history. The application is not yet connected to Supabase, and authentication, persistent chat history, integrations, and action execution are not implemented.
+**Foundation milestone in progress.** The repository contains the initial Next.js application, a central OpenAI Responses API service, a chat interface, request validation, and a Supabase SQL migration defining user-owned conversations, messages, projects, tasks, approvals, and audit history. Supabase authentication screens, cookie-based sessions, and server-side chat authentication are implemented in code. The app is not connected to a live Supabase project yet, and persistent chat history, integrations, and action execution are not implemented.
 
 ## Stack
 
 - Next.js App Router and TypeScript
 - Tailwind CSS v4
 - OpenAI Responses API
-- Supabase Postgres schema (migration drafted; connection and Auth integration pending)
+- Supabase Auth and Postgres (integration code and initial migration drafted; live project setup pending)
 - GitHub integration (planned)
 
 ## Getting started
@@ -30,20 +30,20 @@ Requirements: Node.js 20.9+ and npm.
    cp .env.example .env.local
    ```
 
-3. Add an OpenAI API key to `.env.local`:
+3. Create a Supabase project, then run `supabase/migrations/0001_initial_schema.sql` in its SQL editor. In Supabase Auth settings, enable email/password sign-in and set the Site URL to your app origin. Add the project URL and publishable key to `.env.local`. For local development, allow `http://localhost:3000/auth/callback` as an auth redirect URL.\n\n4. Add an OpenAI API key to `.env.local`:
 
    ```env
    OPENAI_API_KEY=your_key_here
    OPENAI_MODEL=gpt-4.1-mini
    ```
 
-4. Start the development server:
+5. Start the development server:
 
    ```bash
    npm run dev
    ```
 
-5. Open http://localhost:3000.
+6. Open http://localhost:3000.
 
 ## Available scripts
 
@@ -68,7 +68,11 @@ Requirements: Node.js 20.9+ and npm.
 5. Approval queue and controlled action execution
 6. Tests, observability, and deployment hardening
 
-## Architecture and security notes\n\nSee [`docs/architecture.md`](docs/architecture.md) for the system design and [`docs/security-model.md`](docs/security-model.md) for tool risk classes, approval lifecycle, and execution boundaries.\n\n## Project principles
+## Architecture and security notes
+
+See [`docs/architecture.md`](docs/architecture.md) for the system design and [`docs/security-model.md`](docs/security-model.md) for tool risk classes, approval lifecycle, and execution boundaries.
+
+## Project principles
 
 - One central assistant before adding specialist agents.
 - Read and prepare before executing.
