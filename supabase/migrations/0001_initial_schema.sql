@@ -36,7 +36,9 @@ begin
   on conflict (id) do nothing;
   return new;
 end;
-$$;
+$;
+
+revoke all on function public.handle_new_user() from public;
 
 create trigger on_auth_user_created
 after insert on auth.users
