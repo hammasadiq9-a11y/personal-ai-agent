@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { hashPayload } from "@/lib/security/payload-hash";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { hashPayload } from "@/lib/security/payload-hash";
+import { executeApprovedGitHubAction, isSupportedGitHubAction } from "@/lib/tools/github-actions";
 
 export const runtime = "nodejs";
 
@@ -45,7 +46,7 @@ export async function PATCH(
     const admin = createAdminClient();
     const { data: approval, error: fetchError } = await admin
       .from("approvals")
-      .select("id, action_type, payload, payload_hash, status, expires_at")
+      .select("id, action_type, summary, payload, payload_hash, status, expires_at")
       .eq("id", approvalId)
       .eq("user_id", authData.user.id)
       .maybeSingle();
@@ -71,29 +72,97 @@ export async function PATCH(
       return NextResponse.json({ error: "The proposal changed. A new approval is required." }, { status: 409 });
     }
 
-    const nextStatus = decision === "approve" ? "approved" : "rejected";
-    const { data, error } = await admin
+    if (decision === "reject") {
+      const { data, error } = await admin
+        .from("approvals")
+        .update({ status: "rejected", decided_at: new Date().toISOString() })
+        .eq("id", approvalId)
+        .eq("user_id", authData.user.id)
+        .eq("status", "pending")
+        .eq("payload_hash", currentHash)
+        .select("id, action_type, summary, status, decided_at")
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!data) return NextResponse.json({ error: "This approval was already updated." }, { status: 409 });
+
+      await admin.from("audit_logs").insert({
+        user_id: authData.user.id,
+        event_type: "approval.rejected",
+        resource_type: "approval",
+        resource_id: approvalId,
+        details: { action_type: approval.action_type, payload_hash: currentHash },
+      });
+
+      return NextResponse.json({ approval: data });
+    }
+
+    if (!isSupportedGitHubAction(approval.action_type)) {
+      return NextResponse.json({ error: "This action type does not have an approved execution adapter yet." }, { status: 400 });
+    }
+    if (!process.env.GITHUB_WRITE_TOKEN) {
+      return NextResponse.json({ error: "GitHub write access is not configured. The proposal remains pending." }, { status: 503 });
+    }
+
+    const { data: claimed, error: claimError } = await admin
       .from("approvals")
-      .update({ status: nextStatus, decided_at: new Date().toISOString() })
+      .update({ status: "approved", decided_at: new Date().toISOString() })
       .eq("id", approvalId)
       .eq("user_id", authData.user.id)
       .eq("status", "pending")
       .eq("payload_hash", currentHash)
-      .select("id, action_type, summary, status, decided_at")
+      .select("id")
       .maybeSingle();
 
-    if (error) throw error;
-    if (!data) return NextResponse.json({ error: "This approval was already updated." }, { status: 409 });
+    if (claimError) throw claimError;
+    if (!claimed) return NextResponse.json({ error: "This approval was already updated." }, { status: 409 });
 
-    await admin.from("audit_logs").insert({
-      user_id: authData.user.id,
-      event_type: decision === "approve" ? "approval.approved" : "approval.rejected",
-      resource_type: "approval",
-      resource_id: approvalId,
-      details: { action_type: approval.action_type, payload_hash: currentHash },
-    });
+    try {
+      const result = await executeApprovedGitHubAction(approval.action_type, approval.payload as Record<string, unknown>);
+      const { data, error } = await admin
+        .from("approvals")
+        .update({ status: "executed", executed_at: new Date().toISOString() })
+        .eq("id", approvalId)
+        .eq("user_id", authData.user.id)
+        .eq("status", "approved")
+        .select("id, action_type, summary, status, decided_at, executed_at")
+        .maybeSingle();
 
-    return NextResponse.json({ approval: data });
+      if (error) throw error;
+      if (!data) {
+        return NextResponse.json({ error: "The GitHub action ran, but its final status could not be recorded. Check the returned result before retrying.", result }, { status: 500 });
+      }
+
+      await admin.from("audit_logs").insert({
+        user_id: authData.user.id,
+        event_type: "approval.executed",
+        resource_type: "approval",
+        resource_id: approvalId,
+        details: { action_type: approval.action_type, payload_hash: currentHash, result },
+      });
+
+      return NextResponse.json({ approval: data, result });
+    } catch (error) {
+      await admin
+        .from("approvals")
+        .update({ status: "failed" })
+        .eq("id", approvalId)
+        .eq("user_id", authData.user.id)
+        .eq("status", "approved");
+
+      await admin.from("audit_logs").insert({
+        user_id: authData.user.id,
+        event_type: "approval.execution_failed",
+        resource_type: "approval",
+        resource_id: approvalId,
+        details: { action_type: approval.action_type, payload_hash: currentHash },
+      });
+
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : "The approved GitHub action failed." },
+        { status: 502 },
+      );
+    }
   } catch {
     return NextResponse.json({ error: "The approval decision could not be saved." }, { status: 500 });
   }
