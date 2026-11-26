@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 
 type Message = { role: "user" | "assistant"; content: string };
+type Conversation = { id: string; title: string; updated_at: string };
 type Project = { name: string; detail: string; status: string; icon: typeof Code2 };
 
 const projects: Project[] = [
@@ -26,6 +27,8 @@ const suggestions = [
 
 export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -51,7 +54,7 @@ export default function Home() {
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: nextMessages.slice(-20) }),
+        body: JSON.stringify({ messages: nextMessages.slice(-20), conversationId }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "The assistant could not respond.");
@@ -125,6 +128,19 @@ export default function Home() {
             <div className="flex items-center justify-between px-3"><p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-600">Your projects</p><button onClick={() => setActiveView("Projects")} className="text-slate-600 hover:text-slate-300" aria-label="View projects"><Plus size={14}/></button></div>
             <div className="mt-3 space-y-1">
               {projects.map((project) => <button key={project.name} onClick={() => setActiveView("Projects")} className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left hover:bg-white/[0.04]"><project.icon size={15} className="text-slate-500"/><span className="min-w-0 flex-1"><span className="block text-xs text-slate-300">{project.name}</span><span className="block truncate text-[10px] text-slate-600">{project.detail}</span></span><span className="h-1.5 w-1.5 rounded-full bg-slate-600"/></button>)}
+            </div>
+          </div>
+
+          <div className="mt-8">
+            <p className="px-3 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-600">Recent conversations</p>
+            <div className="mt-3 max-h-48 space-y-1 overflow-y-auto">
+              {conversations.length === 0 ? (
+                <p className="px-3 py-2 text-[11px] text-slate-600">Your conversations will appear here.</p>
+              ) : conversations.map((conversation) => (
+                <button key={conversation.id} onClick={() => void openConversation(conversation.id)} className={`block w-full truncate rounded-lg px-3 py-2 text-left text-xs transition ${conversation.id === conversationId ? "bg-violet-400/10 text-violet-200" : "text-slate-400 hover:bg-white/[0.04] hover:text-slate-200"}`}>
+                  {conversation.title}
+                </button>
+              ))}
             </div>
           </div>
 
