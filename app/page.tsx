@@ -41,6 +41,35 @@ export default function Home() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
+  useEffect(() => {
+    let active = true;
+
+    async function loadRecentConversations() {
+      try {
+        const response = await fetch("/api/conversations");
+        if (!response.ok) return;
+        const data = await response.json() as { conversations: Conversation[] };
+        if (!active) return;
+        setConversations(data.conversations ?? []);
+
+        const latest = data.conversations?.[0];
+        if (!latest) return;
+
+        const messagesResponse = await fetch(`/api/conversations/${latest.id}/messages`);
+        if (!messagesResponse.ok) return;
+        const messageData = await messagesResponse.json() as { messages: Message[] };
+        if (!active) return;
+        setConversationId(latest.id);
+        setMessages(messageData.messages ?? []);
+      } catch {
+        // The workspace remains usable if history is temporarily unavailable.
+      }
+    }
+
+    void loadRecentConversations();
+    return () => { active = false; };
+  }, []);
+
   async function sendMessage(value?: string) {
     const content = (value ?? input).trim();
     if (!content || loading) return;
@@ -56,9 +85,15 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages: nextMessages.slice(-20), conversationId }),
       });
-      const data = await response.json();
+      const data = await response.json() as { reply?: string; error?: string; conversationId?: string };
+      if (data.conversationId) setConversationId(data.conversationId);
       if (!response.ok) throw new Error(data.error || "The assistant could not respond.");
-      setMessages([...nextMessages, { role: "assistant", content: data.reply }]);
+      setMessages([...nextMessages, { role: "assistant", content: data.reply ?? "" }]);
+      const historyResponse = await fetch("/api/conversations");
+      if (historyResponse.ok) {
+        const historyData = await historyResponse.json() as { conversations: Conversation[] };
+        setConversations(historyData.conversations ?? []);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to reach the assistant.");
     } finally {
@@ -85,7 +120,23 @@ export default function Home() {
     window.location.assign("/login");
   }
 
+  async function openConversation(id: string) {
+    if (loading) return;
+    try {
+      const response = await fetch(`/api/conversations/${id}/messages`);
+      if (!response.ok) return;
+      const data = await response.json() as { messages: Message[] };
+      setConversationId(id);
+      setMessages(data.messages ?? []);
+      setError("");
+      setActiveView("Assistant");
+    } catch {
+      setError("This conversation could not be loaded.");
+    }
+  }
+
   function newChat() {
+    setConversationId(null);
     setMessages([]);
     setError("");
     setInput("");
