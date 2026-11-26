@@ -21,6 +21,27 @@ create table public.profiles (
   updated_at timestamptz not null default now()
 );
 
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $
+begin
+  insert into public.profiles (id, display_name)
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data ->> 'full_name', new.raw_user_meta_data ->> 'name')
+  )
+  on conflict (id) do nothing;
+  return new;
+end;
+$;
+
+create trigger on_auth_user_created
+after insert on auth.users
+for each row execute function public.handle_new_user();
+
 create table public.conversations (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -134,10 +155,13 @@ create policy "Users manage their conversations" on public.conversations
 for all to authenticated using (user_id = (select auth.uid()))
 with check (user_id = (select auth.uid()));
 
-create policy "Users manage their messages" on public.messages
-for all to authenticated using (user_id = (select auth.uid()))
-with check (
+create policy "Users can read their messages" on public.messages
+for select to authenticated using (user_id = (select auth.uid()));
+
+create policy "Users can send their own messages" on public.messages
+for insert to authenticated with check (
   user_id = (select auth.uid())
+  and role = 'user'
   and exists (
     select 1 from public.conversations c
     where c.id = conversation_id and c.user_id = (select auth.uid())
