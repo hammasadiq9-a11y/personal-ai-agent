@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { askAgent, type ChatMessage } from "@/lib/agent";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";\nimport type { SavedMemory } from "@/lib/agent";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -155,7 +155,16 @@ export async function POST(request: Request) {
 
     if (userMessageError) throw userMessageError;
 
-    const reply = await askAgent(messages);
+    const { data: savedMemories, error: memoryError } = await supabase
+      .from("memories")
+      .select("title, content, category")
+      .eq("user_id", userId)
+      .order("pinned", { ascending: false })
+      .order("updated_at", { ascending: false })
+      .limit(8);
+
+    if (memoryError) throw memoryError;
+    const reply = await askAgent(messages, (savedMemories ?? []) as SavedMemory[]);
     if (!reply) {
       return NextResponse.json({ error: "The assistant returned an empty response. Try again.", conversationId }, { status: 502 });
     }
