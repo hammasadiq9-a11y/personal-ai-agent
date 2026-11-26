@@ -1,10 +1,11 @@
 "use client";
 
 import { FormEvent, KeyboardEvent, useEffect, useRef, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import {
   ArrowUp, Bot, ChevronDown, CircleHelp, Code2,
   FileText, FolderKanban, Globe2, GraduationCap, Menu, Plus,
-  Search, Settings2, ShieldCheck, Sparkles, Terminal, User, X,
+  Search, Settings2, ShieldCheck, Sparkles, Terminal, User, X, LogOut,
 } from "lucide-react";
 
 type Message = { role: "user" | "assistant"; content: string };
@@ -75,7 +76,7 @@ export default function Home() {
     }
   }
 
-  function newChat() {
+  async function signOut() {\n    const supabase = createClient();\n    await supabase.auth.signOut();\n    window.location.assign("/login");\n  }\n\n  function newChat() {
     setMessages([]);
     setError("");
     setInput("");
@@ -122,7 +123,7 @@ export default function Home() {
           </div>
 
           <div className="mt-auto space-y-1 border-t border-white/[0.07] pt-4">
-            <button className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-500 hover:bg-white/[0.04] hover:text-slate-300"><Settings2 size={16}/> Settings</button>
+            <button onClick={() => void signOut()} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-slate-500 hover:bg-white/[0.04] hover:text-slate-300"><LogOut size={16}/> Sign out</button>
             <div className="flex items-center gap-3 rounded-xl bg-white/[0.035] p-3"><div className="flex h-8 w-8 items-center justify-center rounded-full bg-slate-700/60 text-slate-300"><User size={15}/></div><div className="min-w-0 flex-1"><p className="text-xs font-medium text-slate-300">Personal workspace</p><p className="text-[10px] text-slate-600">Local preview</p></div><ChevronDown size={14} className="text-slate-600"/></div>
           </div>
         </aside>
