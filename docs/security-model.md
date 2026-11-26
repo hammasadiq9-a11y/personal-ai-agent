@@ -21,7 +21,7 @@
 
 `pending -> approved -> executed`
 
-Alternative terminal paths are `rejected`, `expired`, and `failed`. A decision must be tied to the exact action type and payload. If the payload changes, the old approval is invalid and a new approval is required. Expired or already-consumed approvals cannot be executed again.
+Alternative terminal paths are `rejected`, `expired`, and `failed`. A decision must be tied to the exact action type and payload. The server stores a SHA-256 hash of a canonical JSON representation and rechecks it when the user decides. If the payload changes, the old approval is invalid and a new approval is required. Expired or already-consumed approvals cannot be executed again. Recording an approval does not execute the action; execution adapters are not implemented yet.
 
 ## Required execution checks
 
