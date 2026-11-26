@@ -107,10 +107,10 @@ export async function executeApprovedGitHubAction(
       !message.trim() ||
       message.length > 200 ||
       typeof content !== "string" ||
-      new TextEncoder().encode(content).byteLength > 80_000 ||
+      new TextEncoder().encode(content).byteLength > 24_000 ||
       (sha !== undefined && (typeof sha !== "string" || !/^[0-9a-f]{40}$/i.test(sha)))
     ) {
-      throw new Error("The file update is invalid. Use an agent/* branch, a short commit message, and a file under 80 KB.");
+      throw new Error("The file update is invalid. Use an agent/* branch, a short commit message, and a file under 24 KB.");
     }
 
     const encodedPath = filePath.split("/").map(encodeURIComponent).join("/");
