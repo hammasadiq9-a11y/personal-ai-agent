@@ -4,7 +4,7 @@ const apiKey = process.env.OPENAI_API_KEY;
 
 const client = apiKey ? new OpenAI({ apiKey, timeout: 25_000, maxRetries: 1 }) : null;
 
-export type ChatMessage = {
+export type SavedMemory = { title: string; content: string; category: string };\n\nexport type ChatMessage = {
   role: "user" | "assistant";
   content: string;
 };
@@ -24,14 +24,14 @@ Working principles:
 - Ask a concise clarifying question only when a missing detail materially blocks progress.
 - Protect secrets. Never ask the user to paste API keys, passwords, or private tokens into chat.`;
 
-export async function askAgent(messages: ChatMessage[]) {
+export async function askAgent(messages: ChatMessage[], savedMemories: SavedMemory[] = []) {
   if (!client) {
     throw new Error("AI is not configured yet. Add OPENAI_API_KEY to your local .env file.");
   }
 
   const response = await client.responses.create({
     model: process.env.OPENAI_MODEL || "gpt-4.1-mini",
-    instructions: SYSTEM_INSTRUCTIONS,
+    instructions: SYSTEM_INSTRUCTIONS + memoryContext,
     input: messages.map((message) => ({
       role: message.role,
       content: message.content,
