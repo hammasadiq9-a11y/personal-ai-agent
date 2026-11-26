@@ -95,6 +95,30 @@ create table public.tasks (
     on delete cascade
 );
 
+create table public.memories (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  project_id uuid,
+  title text not null check (char_length(title) between 1 and 160),
+  content text not null check (char_length(content) between 1 and 4000),
+  category text not null default 'other' check (category in ('preference', 'goal', 'project', 'workflow', 'fact', 'other')),
+  source text not null default 'user' check (source in ('user', 'conversation', 'document', 'assistant')),
+  pinned boolean not null default false,
+  metadata jsonb not null default '{}'::jsonb,
+  search_document tsvector generated always as (
+    to_tsvector('english'::regconfig, coalesce(title, '') || ' ' || content)
+  ) stored,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  constraint memories_project_user_fk
+    foreign key (project_id, user_id)
+    references public.projects(id, user_id)
+    on delete cascade
+);
+
+create index memories_user_updated_idx on public.memories(user_id, pinned desc, updated_at desc);
+create index memories_search_idx on public.memories using gin(search_document);
+
 create table public.approvals (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -188,6 +212,8 @@ create trigger projects_set_updated_at before update on public.projects
 for each row execute function public.set_updated_at();
 create trigger tasks_set_updated_at before update on public.tasks
 for each row execute function public.set_updated_at();
+create trigger memories_set_updated_at before update on public.memories
+for each row execute function public.set_updated_at();
 create trigger approvals_set_updated_at before update on public.approvals
 for each row execute function public.set_updated_at();
 
@@ -196,6 +222,7 @@ alter table public.conversations enable row level security;
 alter table public.messages enable row level security;
 alter table public.projects enable row level security;
 alter table public.tasks enable row level security;
+alter table public.memories enable row level security;
 alter table public.approvals enable row level security;
 alter table public.audit_logs enable row level security;
 
@@ -226,6 +253,16 @@ for all to authenticated using (user_id = (select auth.uid()))
 with check (user_id = (select auth.uid()));
 
 create policy "Users manage their tasks" on public.tasks
+for all to authenticated using (user_id = (select auth.uid()))
+with check (
+  user_id = (select auth.uid())
+  and (project_id is null or exists (
+    select 1 from public.projects p
+    where p.id = project_id and p.user_id = (select auth.uid())
+  ))
+);
+
+create policy "Users manage their memories" on public.memories
 for all to authenticated using (user_id = (select auth.uid()))
 with check (
   user_id = (select auth.uid())
