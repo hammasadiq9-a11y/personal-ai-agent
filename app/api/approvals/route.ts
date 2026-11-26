@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { containsCredentialLikeField, hashPayload } from "@/lib/security/payload-hash";
+import { isSupportedGitHubAction } from "@/lib/tools/github-actions";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -59,7 +60,7 @@ export async function POST(request: Request) {
     const summary = typeof input.summary === "string" ? input.summary.trim() : "";
     const payload = input.payload;
 
-    if (!/^[a-z][a-z0-9_.-]{1,79}$/.test(actionType) || !summary || summary.length > 500) {
+    if (!isSupportedGitHubAction(actionType) || !summary || summary.length > 500) {
       return NextResponse.json({ error: "The action type or summary is invalid." }, { status: 400 });
     }
     if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
