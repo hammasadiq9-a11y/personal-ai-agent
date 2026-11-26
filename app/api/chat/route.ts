@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
-import { askAgent, type ApprovalProposal, type ChatMessage, type MemoryWrite, type SavedMemory } from "@/lib/agent";
+import { askAgent, type ApprovalProposal, type ChatMessage, type GitHubReadRequest, type MemoryWrite, type SavedMemory } from "@/lib/agent";
 import { containsCredentialLikeField, hashPayload } from "@/lib/security/payload-hash";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
+import { runGitHubTool } from "@/lib/tools/github";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -163,7 +164,34 @@ export async function POST(request: Request) {
 
     if (memoryError) throw memoryError;
 
-    const { reply, approvalProposals, memoryWrites } = await askAgent(messages, (savedMemories ?? []) as SavedMemory[]);
+    const initialResult = await askAgent(messages, (savedMemories ?? []) as SavedMemory[]);
+    let reply = initialResult.reply;
+    const approvalProposals = initialResult.approvalProposals;
+    const memoryWrites = initialResult.memoryWrites;
+
+    if (initialResult.githubRequests.length) {
+      const githubResults = await Promise.all(
+        (initialResult.githubRequests as GitHubReadRequest[]).map(async (toolCall) => {
+          try {
+            return {
+              tool: toolCall.name,
+              arguments: toolCall.arguments,
+              result: await runGitHubTool(toolCall.name, toolCall.arguments),
+            };
+          } catch {
+            return { tool: toolCall.name, error: "The GitHub lookup failed. Check the connection and try again." };
+          }
+        }),
+      );
+
+      const finalResult = await askAgent(
+        messages,
+        (savedMemories ?? []) as SavedMemory[],
+        JSON.stringify(githubResults),
+        false,
+      );
+      reply = finalResult.reply;
+    }
     const admin = createAdminClient();
     const approvalIds: string[] = [];
     const memoryIds: string[] = [];
