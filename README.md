@@ -57,15 +57,15 @@ Requirements: Node.js 20.9+ and npm.
 ## Security notes
 
 - Keep API keys in server-side environment variables. Never commit `.env.local`.
-- The chat endpoint validates message shape and length.
-- API responses are not stored by the OpenAI request (`store: false`).
-- Authentication, per-user rate limits, durable memory, tool permission checks, and audit logs are not implemented yet. Do not expose this initial scaffold as a public multi-user service until those controls are added.
+- The chat endpoint verifies the signed-in user and validates message shape, count, total content, and request size.
+- Chat turns are stored in owner-scoped conversations. Assistant messages are inserted through a server-only service-role client; browser clients cannot create assistant messages. OpenAI requests use `store: false`.
+- The migration has not been applied to a live database or tested against real users. Persistent rate limits, research/GitHub integrations, and action execution remain unimplemented. Do not expose this as a public multi-user service until these controls are added and tested.
 
 ## Roadmap
 
 1. Application foundation and AI chat
-2. User authentication and persistent conversations
-3. Project memory and document retrieval
+2. Connect Supabase and verify account creation, sign-in, and RLS isolation
+3. Add project/task CRUD and document retrieval
 4. Read-only GitHub and web research tools
 5. Approval queue and controlled action execution
 6. Tests, observability, and deployment hardening
