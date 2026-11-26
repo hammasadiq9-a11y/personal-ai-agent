@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { askAgent, type ChatMessage } from "@/lib/agent";
+import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -21,6 +22,20 @@ function isChatMessage(value: unknown): value is ChatMessage {
 }
 
 export async function POST(request: Request) {
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) {
+    return NextResponse.json({ error: "Authentication is not configured yet." }, { status: 503 });
+  }
+
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase.auth.getUser();
+    if (error || !data.user) {
+      return NextResponse.json({ error: "Sign in to use your assistant." }, { status: 401 });
+    }
+  } catch {
+    return NextResponse.json({ error: "Authentication could not be verified." }, { status: 503 });
+  }
+
   const declaredLength = Number(request.headers.get("content-length") || 0);
   if (declaredLength > MAX_BODY_BYTES) {
     return NextResponse.json({ error: "The request is too large." }, { status: 413 });
