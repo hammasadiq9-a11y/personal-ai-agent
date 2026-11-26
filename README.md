@@ -4,14 +4,14 @@ Sidekick is a personal AI workspace for software development, research, learning
 
 ## Current status
 
-**Foundation milestone in progress.** The repository currently contains the initial Next.js application, a central OpenAI Responses API service, and a chat interface. Project navigation is an early UI scaffold; persistent memory, integrations, and action approvals are planned work, not implemented features yet.
+**Foundation milestone in progress.** The repository contains the initial Next.js application, a central OpenAI Responses API service, a chat interface, request validation, and a Supabase SQL migration defining user-owned conversations, messages, projects, tasks, approvals, and audit history. The application is not yet connected to Supabase, and authentication, persistent chat history, integrations, and action execution are not implemented.
 
 ## Stack
 
 - Next.js App Router and TypeScript
 - Tailwind CSS v4
 - OpenAI Responses API
-- Supabase (planned for persistent data and authentication)
+- Supabase Postgres schema (migration drafted; connection and Auth integration pending)
 - GitHub integration (planned)
 
 ## Getting started
@@ -68,7 +68,7 @@ Requirements: Node.js 20.9+ and npm.
 5. Approval queue and controlled action execution
 6. Tests, observability, and deployment hardening
 
-## Project principles
+## Architecture and security notes\n\nSee [`docs/architecture.md`](docs/architecture.md) for the system design and [`docs/security-model.md`](docs/security-model.md) for tool risk classes, approval lifecycle, and execution boundaries.\n\n## Project principles
 
 - One central assistant before adding specialist agents.
 - Read and prepare before executing.
