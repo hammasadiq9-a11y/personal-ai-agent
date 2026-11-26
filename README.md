@@ -1,6 +1,6 @@
 # Personal AI Workspace
 
-Personal AI Workspace is a personal AI workspace for software development, research, learning, and project planning.
+A personal assistant workspace for software development, research, learning, and project planning.
 
 ## Current status
 
@@ -66,15 +66,14 @@ For hosted web search, switch to a supported model such as `gpt-6.2-astra` and s
 - Chat turns are stored in owner-scoped conversations. The server loads prior history from the database rather than trusting browser-supplied assistant messages. OpenAI requests use `store: false` and a bounded timeout/output size.
 - Saved memory is loaded as background context. The assistant only writes a memory when the user explicitly asks.
 - GitHub branch, issue, and pull-request creation can be proposed through function calling. Proposals are payload-hashed, audited, expire after 24 hours, and execute only after explicit approval. No other external writes are enabled.
-- The migration has not been applied to a live database or tested against real users. GitHub writes are limited to branch, issue, and pull-request creation after explicit approval. Other external action types and deployment remain unimplemented. Projects can be created/archived; tasks can be created, listed, and updated. Do not expose this as a public multi-user service until database setup, tests, and security checks are complete.
+- The migration has not been applied to a live database or tested against real users. Projects can be created/archived; tasks can be created, listed, and updated. Other external action types and deployment remain unimplemented. Do not expose this as a public multi-user service until database setup, tests, and security checks are complete.
 
 ## Roadmap
 
 1. Application foundation and AI chat
 2. Connect Supabase and verify account creation, sign-in, and RLS isolation
-3. Add document retrieval, task due-date workflows, and richer project management
-4. Expand the allowlisted GitHub actions and add document retrieval
-5. Extend the GitHub action allowlist after further security and integration testing
+3. Add document retrieval and task due-date workflows
+4. Expand the GitHub action allowlist after security and integration testing
 6. Tests, observability, and deployment hardening
 
 ## Architecture and security notes
