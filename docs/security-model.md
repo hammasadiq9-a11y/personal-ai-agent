@@ -13,8 +13,9 @@
 | Class | Examples | Default behavior |
 | --- | --- | --- |
 | Read-only | Read a repository file, list project tasks, search public docs | Allowed after authentication and scope checks |
-| Reversible write | Create a draft task, prepare a branch patch | Require an explicit approval record |
-| External side effect | Send a message, open a PR, deploy, publish | Require approval showing exact destination and payload |
+| Internal workspace write | Create a task or project, save memory after an explicit user request | Allowed only for the authenticated owner and within validated fields |
+| External reversible write | Create an agent branch, commit a file to an agent branch | Require an explicit approval record |
+| External side effect | Create an issue or pull request | Require approval showing exact destination and payload |
 | Destructive or financial | Delete data, change billing, purchase, revoke access | Block in v1; later require a separate high-assurance flow |
 
 ## Approval lifecycle
