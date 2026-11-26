@@ -18,7 +18,7 @@ export async function GET() {
       .from("approvals")
       .select("id, action_type, summary, payload, status, expires_at, decided_at, created_at")
       .eq("user_id", authData.user.id)
-      .in("status", ["pending", "approved", "rejected", "failed"])
+      .in("status", ["pending", "approved", "rejected", "failed", "executed"])
       .order("created_at", { ascending: false })
       .limit(50);
 
