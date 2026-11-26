@@ -22,22 +22,23 @@ export default function KnowledgePanel() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  async function loadMemories() {
-    setLoading(true);
-    try {
-      const response = await fetch("/api/memories");
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Saved memory could not be loaded.");
-      setMemories(data.memories ?? []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Saved memory could not be loaded.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
   useEffect(() => {
+    let active = true;
+    async function loadMemories() {
+      setLoading(true);
+      try {
+        const response = await fetch("/api/memories");
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Saved memory could not be loaded.");
+        if (active) setMemories(data.memories ?? []);
+      } catch (err) {
+        if (active) setError(err instanceof Error ? err.message : "Saved memory could not be loaded.");
+      } finally {
+        if (active) setLoading(false);
+      }
+    }
     void loadMemories();
+    return () => { active = false; };
   }, []);
 
   async function saveMemory(event: FormEvent<HTMLFormElement>) {
