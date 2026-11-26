@@ -243,7 +243,7 @@ export async function askAgent(
     instructions: SYSTEM_INSTRUCTIONS + memoryContext + toolContext,
     input: messages.map((message) => ({ role: message.role, content: message.content })),
     ...(enableTools ? { tools, tool_choice: "auto" as const, parallel_tool_calls: true } : {}),
-    max_output_tokens: 2500,
+    max_output_tokens: 6000,
     store: false,
   });
 
