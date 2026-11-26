@@ -66,13 +66,13 @@ For hosted web search, switch to a supported model such as `gpt-6.2-astra` and s
 - Chat turns are stored in owner-scoped conversations. The server loads prior history from the database rather than trusting browser-supplied assistant messages. OpenAI requests use `store: false` and a bounded timeout/output size.
 - Saved memory is loaded as background context. The assistant only writes a memory when the user explicitly asks.
 - External actions can be proposed through function calling. Proposals are payload-hashed, audited, and require a user decision. Approval does not execute them.
-- The migration has not been applied to a live database or tested against real users. GitHub write operations, project/task CRUD, and actual action execution remain unimplemented. Do not expose this as a public multi-user service until database setup, tests, and security checks are complete.
+- The migration has not been applied to a live database or tested against real users. GitHub write operations, richer task workflows, and actual action execution remain unimplemented. Projects can be created/archived; tasks can be created, listed, and updated. Do not expose this as a public multi-user service until database setup, tests, and security checks are complete.
 
 ## Roadmap
 
 1. Application foundation and AI chat
 2. Connect Supabase and verify account creation, sign-in, and RLS isolation
-3. Add project/task CRUD and document retrieval
+3. Add document retrieval, task due-date workflows, and richer project management
 4. GitHub write operations behind verified approvals and better research workflows
 5. Controlled action execution behind verified approvals
 6. Tests, observability, and deployment hardening
