@@ -223,7 +223,10 @@ export async function POST(request: Request) {
           .select("id, title, status, priority, due_at")
           .single();
 
-        if (taskError) throw taskError;
+        if (taskError) {
+          toolResults.push({ tool: "create_task", error: "The task could not be saved. Check the selected project and try again." });
+          continue;
+        }
         taskIds.push(task.id);
         toolResults.push({ tool: "create_task", task });
       } else if (taskCall.name === "list_tasks") {
@@ -239,7 +242,10 @@ export async function POST(request: Request) {
         if (status !== "all") query = query.eq("status", status);
 
         const { data: tasks, error: tasksError } = await query;
-        if (tasksError) throw tasksError;
+        if (tasksError) {
+          toolResults.push({ tool: "list_tasks", error: "The task list could not be loaded." });
+          continue;
+        }
         toolResults.push({ tool: "list_tasks", status, tasks: tasks ?? [] });
       }
     }
