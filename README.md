@@ -33,7 +33,7 @@ Requirements: Node.js 20.9+ and npm.
 
 3. Create a Supabase project, then run `supabase/migrations/0001_initial_schema.sql` in its SQL editor. In Supabase Auth settings, enable email/password sign-in and set the Site URL to your app origin. Add the project URL and publishable key to `.env.local`. Set `SUPABASE_SERVICE_ROLE_KEY` to the project's service-role secret in the server environment only. Optionally add a fine-grained `GITHUB_TOKEN` with read-only access to the repositories you want Sidekick to inspect. Never expose that key with a `NEXT_PUBLIC_` prefix. For local development, allow `http://localhost:3000/auth/callback` as an auth redirect URL.
 
-4. Add an OpenAI API key to `.env.local`. Keep web search disabled unless you switch to a model that supports the Responses web-search tool. For the current documented setup, use `OPENAI_MODEL=gpt-6.2-astra` and `ENABLE_WEB_SEARCH=true`; hosted search may add API usage costs:
+4. Add an OpenAI API key to `.env.local`. The default model below keeps hosted web search disabled:
 
    ```env
    OPENAI_API_KEY=your_key_here
