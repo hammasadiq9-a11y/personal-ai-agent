@@ -9,12 +9,12 @@ function validPart(value: unknown): value is string {
     /^[A-Za-z0-9_.-]{1,100}$/.test(value);
 }
 
-async function githubWrite(path: string, body: Payload): Promise<unknown> {
+async function githubWrite(path: string, body: Payload, method: "POST" | "PUT" = "POST"): Promise<unknown> {
   const token = process.env.GITHUB_WRITE_TOKEN;
   if (!token) throw new Error("GitHub write access is not configured.");
 
   const response = await fetch(`https://api.github.com${path}`, {
-    method: "POST",
+    method,
     headers: {
       Accept: "application/vnd.github+json",
       Authorization: `Bearer ${token}`,
@@ -47,7 +47,7 @@ async function githubWrite(path: string, body: Payload): Promise<unknown> {
 }
 
 export function isSupportedGitHubAction(actionType: string): boolean {
-  return ["github.create_branch", "github.create_issue", "github.create_pull_request"].includes(actionType);
+  return ["github.create_branch", "github.create_issue", "github.create_pull_request", "github.upsert_file"].includes(actionType);
 }
 
 export async function executeApprovedGitHubAction(
@@ -68,6 +68,7 @@ export async function executeApprovedGitHubAction(
     if (
       typeof branch !== "string" ||
       !/^[A-Za-z0-9._/-]{1,180}$/.test(branch) ||
+      !branch.startsWith("agent/") ||
       branch.startsWith("/") ||
       branch.endsWith("/") ||
       branch.split("/").some((part) => !part || part === "." || part === "..") ||
@@ -83,6 +84,54 @@ export async function executeApprovedGitHubAction(
       url: `https://github.com/${owner}/${repo}/tree/${branch.split("/").map(encodeURIComponent).join("/")}`,
       number: null,
       message: `Created branch ${branch} at ${String(object?.sha ?? sha)}.`,
+    };
+  }
+
+  if (actionType === "github.upsert_file") {
+    const filePath = payload.path;
+    const branch = payload.branch;
+    const message = payload.message;
+    const content = payload.content;
+    const sha = payload.sha;
+
+    if (
+      typeof filePath !== "string" ||
+      !filePath.trim() ||
+      filePath.length > 300 ||
+      filePath.split("/").some((part) => !part || part === "." || part === "..") ||
+      typeof branch !== "string" ||
+      !branch.startsWith("agent/") ||
+      !/^[A-Za-z0-9_.\/-]{1,180}$/.test(branch) ||
+      branch.split("/").some((part) => !part || part === "." || part === "..") ||
+      typeof message !== "string" ||
+      !message.trim() ||
+      message.length > 200 ||
+      typeof content !== "string" ||
+      new TextEncoder().encode(content).byteLength > 80_000 ||
+      (sha !== undefined && (typeof sha !== "string" || !/^[0-9a-f]{40}$/i.test(sha)))
+    ) {
+      throw new Error("The file update is invalid. Use an agent/* branch, a short commit message, and a file under 80 KB.");
+    }
+
+    const encodedPath = filePath.split("/").map(encodeURIComponent).join("/");
+    const data = await githubWrite(
+      `${base}/contents/${encodedPath}`,
+      {
+        message: message.trim(),
+        content: Buffer.from(content, "utf8").toString("base64"),
+        branch,
+        ...(typeof sha === "string" ? { sha } : {}),
+      },
+      "PUT",
+    ) as Record<string, unknown>;
+
+    const contentInfo = data.content as Record<string, unknown> | undefined;
+    const commit = data.commit as Record<string, unknown> | undefined;
+    return {
+      url: typeof contentInfo?.html_url === "string" ? contentInfo.html_url : null,
+      number: null,
+      message: `Committed ${filePath} to ${branch}.`,
+      commit_sha: commit?.sha ?? null,
     };
   }
 
