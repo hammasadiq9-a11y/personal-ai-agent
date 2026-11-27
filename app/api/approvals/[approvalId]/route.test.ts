@@ -111,6 +111,21 @@ describe("PATCH /api/approvals/[approvalId]", () => {
     expect(mocks.executeApprovedGitHubAction).not.toHaveBeenCalled();
   });
 
+  it("rejects a proposal whose payload no longer matches its stored hash", async () => {
+    configureSignedInUser();
+    const tamperedApproval = {
+      ...pendingApproval,
+      payload: { ...payload, branch: "agent/changed" },
+    };
+    const { query } = makeQuery(tamperedApproval);
+    mocks.createAdminClient.mockReturnValue({ from: vi.fn(() => query) });
+
+    const response = await PATCH(makeRequest(), makeContext());
+
+    expect(response.status).toBe(409);
+    expect(mocks.executeApprovedGitHubAction).not.toHaveBeenCalled();
+  });
+
   it("executes a concurrently approved proposal at most once", async () => {
     configureSignedInUser();
     process.env.GITHUB_WRITE_TOKEN = "test-token";
