@@ -6,7 +6,7 @@ A private AI workspace for software development, research, learning, and project
 
 The application foundation and Supabase integration are implemented. The repository includes account authentication, private conversations, saved memories, projects, tasks, an approval inbox, audit events, and a central OpenAI Responses API assistant.
 
-The Supabase project has been created, all three SQL migrations have been applied, and the database schema and row-level security policies have been inspected. Table-level RLS is enabled throughout the public application schema; a two-account behavioral RLS suite has been added and is awaiting a clean CI pass. The application is **not yet production-ready**: end-to-end authentication and data-isolation tests, a dependency lockfile, deployment configuration, and final operational verification remain outstanding.
+The Supabase project has been created, all three SQL migrations have been applied, and the database schema and row-level security policies have been inspected. Table-level RLS is enabled throughout the public application schema; a two-account behavioral RLS suite has been added and is awaiting a clean CI pass. The application is **not yet production-ready**: end-to-end authentication and data-isolation tests, deployment configuration, end-to-end authentication coverage, and final operational verification remain outstanding. A CI-generated `package-lock.json` is now committed, and CI installs from it with `npm ci`.
 
 The Research workspace provides a focused research brief form that routes questions through the assistant. Live web search is optional and must be enabled with `ENABLE_WEB_SEARCH=true`; without it, the assistant is instructed not to claim it performed live research. The workspace status indicator reports configuration state to signed-in users without exposing secret values.
 
@@ -27,7 +27,7 @@ Requirements: Node.js 22 and npm.
 1. Install dependencies:
 
    ```bash
-   npm install
+   npm ci
    ```
 
 2. Copy the environment template:
