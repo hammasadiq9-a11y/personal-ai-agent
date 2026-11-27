@@ -8,12 +8,12 @@ create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
 set search_path = ''
-as $
+as $function$
 begin
   new.updated_at = now();
   return new;
 end;
-$;
+$function$;
 
 revoke all on function public.set_updated_at() from public, anon, authenticated;
 
