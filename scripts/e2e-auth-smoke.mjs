@@ -87,8 +87,8 @@ const projectResponse = await appRequest("/api/projects", {
   headers: { "content-type": "application/json" },
   body: JSON.stringify({ name: "CI smoke project", description: "Created by the isolated auth smoke test" }),
 });
-assert.equal(projectResponse.status, 201, `project creation failed: ${JSON.stringify(await json(projectResponse))}`);
 const projectBody = await json(projectResponse);
+assert.equal(projectResponse.status, 201, `project creation failed: ${JSON.stringify(projectBody)}`);
 const projectId = projectBody.project?.id;
 assert.ok(projectId, "project creation should return an ID");
 
