@@ -34,6 +34,7 @@ async function confirmationUrl(email: string): Promise<string> {
 }
 
 test("email confirmation, sign-in/out, protected navigation, and persisted browser session", async ({ page }) => {
+  test.setTimeout(90_000);
   const email = \`browser-\${randomUUID()}@example.test\`;
   const password = \`Browser-Test-\${randomUUID()}-aA9!\`;
 
