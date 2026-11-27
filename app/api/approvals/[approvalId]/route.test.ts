@@ -96,6 +96,21 @@ describe("PATCH /api/approvals/[approvalId]", () => {
     expect(mocks.executeApprovedGitHubAction).not.toHaveBeenCalled();
   });
 
+  it("does not execute an expired approval", async () => {
+    configureSignedInUser();
+    const expiredApproval = {
+      ...pendingApproval,
+      expires_at: new Date(Date.now() - 60_000).toISOString(),
+    };
+    const { query } = makeQuery(expiredApproval);
+    mocks.createAdminClient.mockReturnValue({ from: vi.fn(() => query) });
+
+    const response = await PATCH(makeRequest(), makeContext());
+
+    expect(response.status).toBe(410);
+    expect(mocks.executeApprovedGitHubAction).not.toHaveBeenCalled();
+  });
+
   it("executes a concurrently approved proposal at most once", async () => {
     configureSignedInUser();
     process.env.GITHUB_WRITE_TOKEN = "test-token";
