@@ -121,7 +121,7 @@ describe("PATCH /api/approvals/[approvalId]", () => {
           updateValues = values;
           return query;
         });
-        query.maybeSingle = vi.fn(async () => {
+        const resolveQuery = vi.fn(async () => {
           if (operation === "select") {
             reads += 1;
             if (reads === 2) releaseReads();
@@ -142,6 +142,7 @@ describe("PATCH /api/approvals/[approvalId]", () => {
           status = String(updateValues.status);
           return { data: { id: approvalId, ...updateValues }, error: null };
         });
+        query.maybeSingle = resolveQuery;
         return query;
       }),
     });
