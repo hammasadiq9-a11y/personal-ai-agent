@@ -7,11 +7,12 @@ Sidekick is a personal AI workspace for software development, research, learning
 ## Current implementation
 
 - Next.js App Router and TypeScript provide the web application and server routes.
-- The chat route calls the OpenAI Responses API from the server, loads a bounded set of user-saved memory notes, stores the conversation turn, and can run read-only GitHub lookups when a server token is configured.
-- The browser loads recent conversations and message history through authenticated API routes; chat turns are persisted in Supabase when the project is configured.
+- The chat route calls the OpenAI Responses API from the server, loads a bounded set of user-saved memory notes, persists conversation turns, and can run read-only GitHub lookups when a server token is configured.
+- The browser loads recent conversations and message history through authenticated API routes; chat turns are persisted in Supabase.
 - The Knowledge view manages user-owned memory notes through authenticated routes.
+- The approval inbox lists owner-scoped proposals and sends decisions to a server route that validates ownership, expiry, payload hashes, and the supported action allowlist before executing an approved GitHub write.
 - Projects and tasks have owner-scoped CRUD routes; the workspace supports project creation/archiving and task creation/status updates. The assistant can create/list projects and tasks.
-- Supabase schema is defined in `supabase/migrations/0001_initial_schema.sql`; the application is not yet connected to it.
+- Supabase schema and hardening changes are defined in `supabase/migrations/`; migrations 0001, 0002, and 0003 have been applied to the configured Supabase project.
 
 ## Target architecture
 
@@ -42,7 +43,7 @@ Approval must be specific to an action and payload. A broad instruction such as 
 
 ## Security requirements before public deployment
 
-- Add Supabase Auth and enforce authentication on every private route.
+- Complete end-to-end Supabase Auth testing across signup, email confirmation, sign-in, session refresh, sign-out, and protected routes.
 - Keep OpenAI and Supabase service-role credentials server-side.
 - Apply and test the database-backed per-user chat rate limit and add broader usage quotas.
 - Validate request schemas and impose request/body size limits.
