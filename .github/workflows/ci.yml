@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -26,27 +26,7 @@ jobs:
           node-version: 22
 
       - name: Install dependencies
-        run: |
-          if [ -f package-lock.json ]; then
-            npm ci
-          else
-            npm install
-          fi
-
-      - name: Commit generated dependency lockfile
-        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
-        run: |
-          if git ls-files --error-unmatch package-lock.json >/dev/null 2>&1; then
-            echo "Dependency lockfile is already tracked."
-            exit 0
-          fi
-          git fetch origin "${{ github.head_ref }}"
-          git switch -c ci-lockfile --track "origin/${{ github.head_ref }}"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package-lock.json
-          git commit -m "chore: add npm dependency lockfile"
-          git push origin "HEAD:${{ github.head_ref }}"
+        run: npm ci
 
       - name: Report dependency vulnerabilities
         run: |
