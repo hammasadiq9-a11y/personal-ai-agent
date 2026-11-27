@@ -67,6 +67,7 @@ Migrations are in `supabase/migrations/`:
 
 - `0001_initial_schema.sql`
 - `0002_harden_schema.sql`
+- `0003_lock_down_rate_limit_storage.sql`
 
 They define the user-owned application tables, row-level security policies, and server-side rate-limit function. The `api_rate_limits` table intentionally has no authenticated-user policy; it is accessed by the server using the service-role client.
 
