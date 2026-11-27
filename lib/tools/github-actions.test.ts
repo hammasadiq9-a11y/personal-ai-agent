@@ -16,13 +16,16 @@ describe("GitHub write response limits", () => {
 
   it("rejects an oversized declared response before reading its body", async () => {
     let bodyWasRead = false;
-    const body = new ReadableStream<Uint8Array>({
-      pull(controller) {
-        bodyWasRead = true;
-        controller.enqueue(new Uint8Array([123]));
-        controller.close();
+    const body = new ReadableStream<Uint8Array>(
+      {
+        pull(controller) {
+          bodyWasRead = true;
+          controller.enqueue(new Uint8Array([123]));
+          controller.close();
+        },
       },
-    });
+      { highWaterMark: 0 },
+    );
     const response = new Response(body, {
       headers: { "content-length": "256001" },
     });
