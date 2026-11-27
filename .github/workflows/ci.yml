@@ -63,6 +63,17 @@ jobs:
       - name: Initialise local Supabase configuration
         run: supabase init
 
+      - name: Disable email confirmation for isolated auth tests
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          config = Path("supabase/config.toml")
+          content = config.read_text()
+          content = re.sub(r"(?m)^enable_confirmations\\s*=\\s*true$", "enable_confirmations = false", content)
+          config.write_text(content)
+          PY
+
       - name: Start local Supabase services and apply migrations
         shell: bash
         run: |
@@ -81,6 +92,50 @@ jobs:
 
       - name: Run database security tests
         run: supabase test db
+
+      - name: Export local Supabase credentials
+        shell: bash
+        run: |
+          eval "$(supabase status -o env)"
+          {
+            echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL"
+            echo "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=$ANON_KEY"
+            echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
+            echo "OPENAI_API_KEY=ci-test-only-not-a-real-key"
+            echo "OPENAI_MODEL=gpt-4.1-mini"
+          } >> "$GITHUB_ENV"
+
+      - name: Install application dependencies
+        run: npm ci
+
+      - name: Build application for authenticated smoke test
+        run: npm run build
+
+      - name: Start application server
+        shell: bash
+        run: |
+          npm run start > /tmp/personal-ai-agent-next.log 2>&1 &
+          echo $! > /tmp/personal-ai-agent-next.pid
+          for attempt in {1..30}; do
+            status="$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:3000/login || true)"
+            if [ "$status" = "200" ]; then
+              echo "Application server is ready."
+              exit 0
+            fi
+            sleep 2
+          done
+          cat /tmp/personal-ai-agent-next.log
+          exit 1
+
+      - name: Run authenticated application smoke test
+        run: npm run test:e2e:smoke
+
+      - name: Stop application server
+        if: always()
+        run: |
+          if [ -f /tmp/personal-ai-agent-next.pid ]; then
+            kill "$(cat /tmp/personal-ai-agent-next.pid)" || true
+          fi
 
       - name: Stop local Supabase services
         if: always()
