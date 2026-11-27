@@ -15,7 +15,7 @@ import {
 type Message = { role: "user" | "assistant"; content: string };
 type Conversation = { id: string; title: string; updated_at: string };
 type ProjectSummary = { id: string; name: string; description: string };
-type AppStatus = { databaseConfigured: boolean; aiConfigured: boolean; webSearchEnabled: boolean; githubReadEnabled: boolean; githubWriteEnabled: boolean };
+type AppStatus = { databaseConfigured: boolean; aiConfigured: boolean; webSearchEnabled: boolean; githubReadEnabled: boolean };
 
 const suggestions = [
   { icon: Code2, title: "Help me build", prompt: "Help me plan and build a software feature. Start by asking what outcome I need." },
