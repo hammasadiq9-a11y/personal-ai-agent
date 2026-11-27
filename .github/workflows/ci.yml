@@ -33,6 +33,9 @@ jobs:
           npm audit --json > npm-audit.json || true
           node -e 'const report = require("./npm-audit.json"); for (const [name, item] of Object.entries(report.vulnerabilities || {})) console.log(`${name}: ${item.severity}; direct=${item.isDirect}; range=${item.range}; fix=${JSON.stringify(item.fixAvailable)}`); console.log("Totals:", JSON.stringify(report.metadata?.vulnerabilities || {}));'
 
+      - name: Enforce dependency audit
+        run: npm audit --audit-level=moderate
+
       - name: Run lint
         run: npm run lint
 
