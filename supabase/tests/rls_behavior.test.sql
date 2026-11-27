@@ -64,25 +64,13 @@ select is((select count(*)::integer from public.memories), 1, 'user A sees only 
 select is((select count(*)::integer from public.approvals), 1, 'user A sees only their approvals');
 select is((select count(*)::integer from public.audit_logs), 1, 'user A sees only their audit history');
 
-select is(
-  (with changed as (
-    update public.projects set name = 'Tampered by A'
-    where id = '20000000-0000-4000-8000-000000000002'
-    returning 1
-  ) select count(*)::integer from changed),
-  0,
-  'user A cannot update user B project'
-);
+-- These are deliberately top-level mutations: RLS should filter both targets.
+update public.projects
+set name = 'Tampered by A'
+where id = '20000000-0000-4000-8000-000000000002';
 
-select is(
-  (with removed as (
-    delete from public.projects
-    where id = '20000000-0000-4000-8000-000000000002'
-    returning 1
-  ) select count(*)::integer from removed),
-  0,
-  'user A cannot delete user B project'
-);
+delete from public.projects
+where id = '20000000-0000-4000-8000-000000000002';
 
 select throws_ok(
   $$insert into public.projects (id, user_id, name)
@@ -146,6 +134,18 @@ select is((select count(*)::integer from public.tasks), 1, 'user B sees only the
 select is((select count(*)::integer from public.memories), 1, 'user B sees only their memories');
 select is((select count(*)::integer from public.approvals), 1, 'user B sees only their approvals');
 select is((select count(*)::integer from public.audit_logs), 1, 'user B sees only their audit history');
+
+select is(
+  (select count(*)::integer from public.projects where id = '20000000-0000-4000-8000-000000000002'),
+  1,
+  'user A could not delete user B project'
+);
+
+select is(
+  (select name from public.projects where id = '20000000-0000-4000-8000-000000000002'),
+  'User B project',
+  'user A could not update user B project'
+);
 
 select * from finish();
 
