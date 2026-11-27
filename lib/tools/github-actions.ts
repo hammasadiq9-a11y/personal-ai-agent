@@ -2,6 +2,45 @@ import "server-only";
 
 type Payload = Record<string, unknown>;
 
+async function readBoundedResponseText(response: Response, maxBytes: number): Promise<string> {
+  const declaredLength = Number(response.headers.get("content-length") || 0);
+  if (Number.isFinite(declaredLength) && declaredLength > maxBytes) {
+    throw new Error("GitHub returned an unexpectedly large response.");
+  }
+
+  if (!response.body) return "";
+
+  const reader = response.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > maxBytes) {
+        await reader.cancel();
+        throw new Error("GitHub returned an unexpectedly large response.");
+      }
+      chunks.push(value);
+    }
+  } catch (error) {
+    await reader.cancel().catch(() => undefined);
+    throw error;
+  } finally {
+    reader.releaseLock();
+  }
+
+  const bytes = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return new TextDecoder().decode(bytes);
+}
+
 function validPart(value: unknown): value is string {
   return typeof value === "string" &&
     value !== "." &&
@@ -26,8 +65,7 @@ async function githubWrite(path: string, body: Payload, method: "POST" | "PUT" =
     signal: AbortSignal.timeout(15_000),
   });
 
-  const raw = await response.text();
-  if (raw.length > 256_000) throw new Error("GitHub returned an unexpectedly large response.");
+  const raw = await readBoundedResponseText(response, 256_000);
 
   let data: unknown;
   try {
