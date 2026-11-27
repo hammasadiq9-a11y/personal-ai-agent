@@ -9,7 +9,7 @@ async function confirmationUrl(email: string): Promise<string> {
   const deadline = Date.now() + 30_000;
 
   while (Date.now() < deadline) {
-    const inbox = await fetch(`${inbucketUrl}/api/v1/mailbox/${mailbox}`);
+    const inbox = await fetch(\`\${inbucketUrl}/api/v1/mailbox/\${mailbox}\`);
     if (inbox.ok) {
       const payload: unknown = await inbox.json();
       const messages = Array.isArray(payload)
@@ -20,10 +20,10 @@ async function confirmationUrl(email: string): Promise<string> {
 
       for (const item of messages) {
         if (!item || typeof item !== "object" || !("id" in item)) continue;
-        const detail = await fetch(`${inbucketUrl}/api/v1/mailbox/${mailbox}/${encodeURIComponent(String(item.id))}`);
+        const detail = await fetch(\`\${inbucketUrl}/api/v1/mailbox/\${mailbox}/\${encodeURIComponent(String(item.id))}\`);
         if (!detail.ok) continue;
         const message = await detail.text();
-        const match = message.match(/https?:\\/\\/[^\\s"'<>]+/);
+        const match = message.match(/https?:\/\/[^\s"'<>]+/);
         if (match) return match[0].replaceAll("&amp;", "&").replaceAll("=\n", "=");
       }
     }
@@ -34,11 +34,11 @@ async function confirmationUrl(email: string): Promise<string> {
 }
 
 test("email confirmation, sign-in/out, protected navigation, and persisted browser session", async ({ page }) => {
-  const email = `browser-${randomUUID()}@example.test`;
-  const password = `Browser-Test-${randomUUID()}-aA9!`;
+  const email = \`browser-\${randomUUID()}@example.test\`;
+  const password = \`Browser-Test-\${randomUUID()}-aA9!\`;
 
   await page.goto(baseUrl);
-  await expect(page).toHaveURL(/\\/login$/);
+  await expect(page).toHaveURL(/\/login$/);
 
   await page.getByRole("button", { name: "Create an account" }).click();
   await expect(page.getByRole("heading", { name: "Create your account" })).toBeVisible();
@@ -55,7 +55,7 @@ test("email confirmation, sign-in/out, protected navigation, and persisted brows
   await expect(page.getByRole("button", { name: "Sign out" })).toBeVisible();
 
   await page.getByRole("button", { name: "Sign out" }).click();
-  await expect(page).toHaveURL(/\\/login$/);
+  await expect(page).toHaveURL(/\/login$/);
 
   await page.getByLabel("Email address").fill(email);
   await page.getByLabel("Password").fill(password);
