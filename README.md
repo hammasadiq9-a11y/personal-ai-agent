@@ -8,7 +8,7 @@ The application foundation and Supabase integration are implemented. The reposit
 
 The Supabase project has been created, all three SQL migrations have been applied, and the database schema and row-level security policies have been inspected. Table-level RLS is enabled throughout the public application schema; cross-account integration tests are still outstanding. The application is **not yet production-ready**: end-to-end authentication and data-isolation tests, a dependency lockfile, deployment configuration, and final operational verification remain outstanding.
 
-The Research navigation item is currently a placeholder. Research questions can be sent through Assistant; the dedicated Research workspace has not been implemented.
+The Research workspace provides a focused research brief form that routes questions through the assistant. Live web search is optional and must be enabled with `ENABLE_WEB_SEARCH=true`; without it, the assistant is instructed not to claim it performed live research. The workspace status indicator reports configuration state to signed-in users without exposing secret values.
 
 ## Stack
 
@@ -16,7 +16,7 @@ The Research navigation item is currently a placeholder. Research questions can 
 - Tailwind CSS v4
 - OpenAI Responses API
 - Supabase Auth and Postgres
-- Optional hosted web search through the Responses API
+- Optional hosted web search through the Responses API, surfaced through the Research workspace
 - Optional read-only GitHub API integration
 - Approval-gated GitHub writes
 
@@ -80,6 +80,7 @@ A pgTAP structural security suite is in `supabase/tests/security_policies.test.s
 - `npm run lint` — ESLint
 - `npm run typecheck` — TypeScript validation
 - `npm run test` — Vitest unit tests
+- Supabase migrations and pgTAP structural security tests run in the `database-security` CI job using an isolated local Supabase stack
 
 ## Security boundaries
 
