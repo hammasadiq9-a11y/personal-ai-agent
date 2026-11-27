@@ -1,6 +1,7 @@
 name: CI
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
   pull_request:
@@ -47,6 +48,7 @@ jobs:
           git add package-lock.json
           git commit -m "chore: add npm dependency lockfile"
           git push origin "HEAD:${{ github.head_ref }}"
+          gh workflow run ci.yml --ref "${{ github.head_ref }}"
 
 
       - name: Report dependency vulnerabilities
