@@ -6,7 +6,7 @@ A private AI workspace for software development, research, learning, and project
 
 The application foundation and Supabase integration are implemented. The repository includes account authentication, private conversations, saved memories, projects, tasks, an approval inbox, audit events, and a central OpenAI Responses API assistant.
 
-The Supabase project has been created, both SQL migrations have been applied, and the database schema and row-level security policies have been checked. The application is **not yet production-ready**: end-to-end authentication and data-isolation tests, a dependency lockfile, deployment configuration, and final operational verification remain outstanding.
+The Supabase project has been created, all three SQL migrations have been applied, and the database schema and row-level security policies have been inspected. Table-level RLS is enabled throughout the public application schema; cross-account integration tests are still outstanding. The application is **not yet production-ready**: end-to-end authentication and data-isolation tests, a dependency lockfile, deployment configuration, and final operational verification remain outstanding.
 
 The Research navigation item is currently a placeholder. Research questions can be sent through Assistant; the dedicated Research workspace has not been implemented.
 
