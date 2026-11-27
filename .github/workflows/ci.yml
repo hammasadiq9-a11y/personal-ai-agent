@@ -63,17 +63,6 @@ jobs:
       - name: Initialise local Supabase configuration
         run: supabase init
 
-      - name: Disable email confirmation for isolated auth tests
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          import re
-          config = Path("supabase/config.toml")
-          content = config.read_text()
-          content = re.sub(r"(?m)^enable_confirmations\s*=\s*true$", "enable_confirmations = false", content)
-          config.write_text(content)
-          PY
-
       - name: Start local Supabase services and apply migrations
         shell: bash
         run: |
