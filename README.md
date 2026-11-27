@@ -80,6 +80,7 @@ The pgTAP suites are in `supabase/tests/`. `security_policies.test.sql` checks R
 - `npm run lint` — ESLint
 - `npm run typecheck` — TypeScript validation
 - `npm run test` — Vitest unit tests
+- `npm run test:e2e:smoke` — authenticated integration smoke test against a running local app and Supabase stack (configured and run by CI)
 - Supabase migrations and pgTAP structural security tests run in the `database-security` CI job using an isolated local Supabase stack
 
 ## Security boundaries
