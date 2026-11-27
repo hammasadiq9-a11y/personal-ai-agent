@@ -64,7 +64,20 @@ jobs:
         run: supabase init
 
       - name: Start local Supabase services and apply migrations
-        run: supabase start -x studio,imgproxy,edge-runtime,logflare,vector
+        shell: bash
+        run: |
+          for attempt in 1 2 3; do
+            echo "Supabase startup attempt ${attempt}/3"
+            if supabase start -x studio,imgproxy,edge-runtime,logflare,vector; then
+              exit 0
+            fi
+            supabase stop --no-backup || true
+            if [ "${attempt}" -lt 3 ]; then
+              sleep $((attempt * 30))
+            fi
+          done
+          echo "Supabase could not start after three attempts."
+          exit 1
 
       - name: Run database security tests
         run: supabase test db
