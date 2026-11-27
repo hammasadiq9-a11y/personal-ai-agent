@@ -45,6 +45,10 @@ export default function Home() {
 
   useEffect(() => {
     let active = true;
+    fetch("/api/status")
+      .then(async (response) => response.ok ? await response.json() as AppStatus : null)
+      .then((data) => { if (active && data) setAppStatus(data); })
+      .catch(() => { /* Setup status remains unknown if the endpoint is unavailable. */ });
     fetch("/api/projects")
       .then(async (response) => {
         if (!response.ok) return null;
@@ -149,7 +153,18 @@ export default function Home() {
     }
   }
 
-  function submitResearch(event: FormEvent<HTMLFormElement>) {\n    event.preventDefault();\n    const topic = researchQuestion.trim();\n    if (!topic || loading) return;\n    setResearchQuestion("");\n    setActiveView("Assistant");\n    void sendMessage(`Research this topic: ${topic}\\n\\nSeparate established facts from uncertainty. Use live web search and cite sources if the search tool is available. If live search is unavailable, say so clearly and do not present unverified information as current.`);\n  }\n\n  function newChat() {
+  function submitResearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const topic = researchQuestion.trim();
+    if (!topic || loading) return;
+    setResearchQuestion("");
+    setActiveView("Assistant");
+    void sendMessage(`Research this topic: ${topic}
+
+Separate established facts from uncertainty. Use live web search and cite sources if the search tool is available. If live search is unavailable, say so clearly and do not present unverified information as current.`);
+  }
+
+  function newChat() {
     setConversationId(null);
     setMessages([]);
     setError("");
