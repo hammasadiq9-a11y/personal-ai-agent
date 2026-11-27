@@ -71,6 +71,8 @@ Migrations are in `supabase/migrations/`:
 
 They define the user-owned application tables, row-level security policies, and server-side rate-limit function. The `api_rate_limits` table intentionally has no authenticated-user policy; it is accessed by the server using the service-role client.
 
+A pgTAP structural security suite is in `supabase/tests/security_policies.test.sql`. To run it safely, initialize and start a local Supabase stack (`npx supabase init`, then `npx supabase start`) and run `npx supabase test db`. These checks verify RLS flags, policy definitions, grants, and ownership constraints. They do not replace behavioral two-account tests.
+
 ## Available scripts
 
 - `npm run dev` — development server
