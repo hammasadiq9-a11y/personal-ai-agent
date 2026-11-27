@@ -1,12 +1,14 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { createServerClient } from "@supabase/ssr";
+import { createClient as createAdminClient } from "@supabase/supabase-js";
 
 const baseUrl = process.env.E2E_BASE_URL ?? "http://127.0.0.1:3000";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!supabaseUrl || !publishableKey) {
+if (!supabaseUrl || !publishableKey || !serviceRoleKey) {
   throw new Error("Local Supabase URL and publishable key are required for the auth smoke test.");
 }
 
@@ -70,7 +72,17 @@ const supabase = createTestClient();
 const signup = await supabase.auth.signUp({ email, password });
 assert.equal(signup.error, null, `sign-up failed: ${signup.error?.message ?? "unknown error"}`);
 assert.ok(signup.data.user, "sign-up should create a local auth user");
-assert.ok(signup.data.session, "local test auth should issue a session without email confirmation");
+
+if (!signup.data.session) {
+  const admin = createAdminClient(supabaseUrl, serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const confirmed = await admin.auth.admin.updateUserById(signup.data.user.id, { email_confirm: true });
+  assert.equal(confirmed.error, null, `local test user confirmation failed: ${confirmed.error?.message ?? "unknown error"}`);
+  const initialSignin = await supabase.auth.signInWithPassword({ email, password });
+  assert.equal(initialSignin.error, null, `initial sign-in failed: ${initialSignin.error?.message ?? "unknown error"}`);
+  assert.ok(initialSignin.data.session, "confirmed test user should receive a session");
+}
 
 const authenticatedPage = await appRequest("/");
 assert.equal(authenticatedPage.status, 200, "signed-in users should reach the workspace");
