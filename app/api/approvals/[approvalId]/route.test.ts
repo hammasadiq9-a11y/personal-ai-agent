@@ -121,6 +121,7 @@ describe("PATCH /api/approvals/[approvalId]", () => {
           updateValues = values;
           return query;
         });
+        query.insert = vi.fn(async () => ({ data: null, error: null }));
         const resolveQuery = vi.fn(async () => {
           if (operation === "select") {
             reads += 1;
