@@ -15,6 +15,7 @@ import {
 type Message = { role: "user" | "assistant"; content: string };
 type Conversation = { id: string; title: string; updated_at: string };
 type ProjectSummary = { id: string; name: string; description: string };
+type AppStatus = { databaseConfigured: boolean; aiConfigured: boolean; webSearchEnabled: boolean; githubReadEnabled: boolean; githubWriteEnabled: boolean };
 
 const suggestions = [
   { icon: Code2, title: "Help me build", prompt: "Help me plan and build a software feature. Start by asking what outcome I need." },
@@ -27,6 +28,8 @@ export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
+  const [appStatus, setAppStatus] = useState<AppStatus | null>(null);
+  const [researchQuestion, setResearchQuestion] = useState("");
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -146,7 +149,7 @@ export default function Home() {
     }
   }
 
-  function newChat() {
+  function submitResearch(event: FormEvent<HTMLFormElement>) {\n    event.preventDefault();\n    const topic = researchQuestion.trim();\n    if (!topic || loading) return;\n    setResearchQuestion("");\n    setActiveView("Assistant");\n    void sendMessage(`Research this topic: ${topic}\\n\\nSeparate established facts from uncertainty. Use live web search and cite sources if the search tool is available. If live search is unavailable, say so clearly and do not present unverified information as current.`);\n  }\n\n  function newChat() {
     setConversationId(null);
     setMessages([]);
     setError("");
@@ -221,7 +224,7 @@ export default function Home() {
             {!sidebarOpen && <button onClick={() => setSidebarOpen(true)} className="rounded-lg p-2 text-slate-400 hover:bg-white/5" aria-label="Open sidebar"><Menu size={18}/></button>}
             <div><p className="text-sm font-medium text-slate-200">{activeView}</p><p className="text-[11px] text-slate-600">Your thinking and execution workspace</p></div>
           </div>
-          <div className="flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.025] px-3 py-1.5"><span className="h-1.5 w-1.5 rounded-full bg-amber-400"/><span className="text-[10px] text-slate-500">AI setup required</span></div>
+          <div className="flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.025] px-3 py-1.5"><span className={`h-1.5 w-1.5 rounded-full ${appStatus?.databaseConfigured && appStatus.aiConfigured ? "bg-emerald-400" : "bg-amber-400"}`}/><span className="text-[10px] text-slate-500">{!appStatus ? "Checking setup" : !appStatus.databaseConfigured ? "Database setup required" : !appStatus.aiConfigured ? "AI setup required" : "AI ready"}</span></div>
         </header>
 
         {activeView === "Assistant" ? (
@@ -258,7 +261,7 @@ export default function Home() {
         ) : (
           <div className="mx-auto w-full max-w-4xl flex-1 px-5 py-12 md:px-8">
             <div className="mb-8 flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-xl border border-violet-300/20 bg-violet-300/10 text-violet-200">{activeView === "Projects" ? <FolderKanban size={19}/> : activeView === "Research" ? <Globe2 size={19}/> : <FileText size={19}/>}</div><div><h1 className="text-2xl font-medium text-slate-100">{activeView}</h1><p className="mt-1 text-sm text-slate-500">{activeView === "Projects" ? "Create and organise your projects." : activeView === "Tasks" ? "Track tasks, priorities, and progress." : activeView === "Knowledge" ? "Manage the notes your assistant can use as context." : activeView === "Approvals" ? "Review proposed actions before anything external happens." : "Use the assistant to research topics and work through problems."}</p></div></div>
-            {activeView === "Projects" ? <ProjectsPanel/> : activeView === "Knowledge" ? <KnowledgePanel/> : activeView === "Approvals" ? <ApprovalsPanel/> : activeView === "Tasks" ? <TasksPanel/> : <div className="rounded-2xl border border-dashed border-white/10 p-10 text-center"><CircleHelp className="mx-auto text-slate-600" size={24}/><p className="mt-4 text-sm text-slate-400">This module will be connected in a later milestone.</p><button onClick={() => setActiveView("Assistant")} className="mt-4 text-xs text-violet-300 hover:text-violet-200">Return to assistant</button></div>}
+            {activeView === "Projects" ? <ProjectsPanel/> : activeView === "Knowledge" ? <KnowledgePanel/> : activeView === "Approvals" ? <ApprovalsPanel/> : activeView === "Tasks" ? <TasksPanel/> : activeView === "Research" ? <div className="rounded-2xl border border-white/[0.08] bg-white/[0.025] p-6"><h2 className="text-sm font-medium text-slate-200">Start a research brief</h2><p className="mt-2 text-xs leading-6 text-slate-500">Describe the question you want investigated. The assistant will organise the response, distinguish evidence from uncertainty, and cite sources when live web search is available.</p><div className={`mt-4 rounded-lg border px-3 py-2 text-xs ${appStatus?.webSearchEnabled ? "border-emerald-400/20 bg-emerald-400/[0.05] text-emerald-200" : "border-amber-400/20 bg-amber-400/[0.05] text-amber-200"}`}>{appStatus?.webSearchEnabled ? "Live web search is enabled." : "Live web search is not enabled. Research may rely on the assistant’s existing knowledge."}</div><form onSubmit={submitResearch} className="mt-5 space-y-3"><textarea value={researchQuestion} onChange={(event) => setResearchQuestion(event.target.value)} maxLength={6000} rows={5} placeholder="What do you want to understand?" className="w-full resize-y rounded-xl border border-white/10 bg-[#0b1018] px-4 py-3 text-sm leading-6 text-slate-200 outline-none placeholder:text-slate-600 focus:border-violet-300/40"/><div className="flex justify-end"><button type="submit" disabled={!researchQuestion.trim() || loading} className="rounded-lg bg-violet-300 px-4 py-2.5 text-xs font-semibold text-[#11111a] transition hover:bg-violet-200 disabled:opacity-40">Research with assistant</button></div></form></div> : <div className="rounded-2xl border border-dashed border-white/10 p-10 text-center"><CircleHelp className="mx-auto text-slate-600" size={24}/><p className="mt-4 text-sm text-slate-400">This module will be connected in a later milestone.</p><button onClick={() => setActiveView("Assistant")} className="mt-4 text-xs text-violet-300 hover:text-violet-200">Return to assistant</button></div>}
           </div>
         )}
       </section>
