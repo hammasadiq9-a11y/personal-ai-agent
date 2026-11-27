@@ -65,15 +65,23 @@ select is((select count(*)::integer from public.approvals), 1, 'user A sees only
 select is((select count(*)::integer from public.audit_logs), 1, 'user A sees only their audit history');
 
 select is(
-  (select count(*)::integer from public.projects where id = '20000000-0000-4000-8000-000000000002'),
+  (with changed as (
+    update public.projects set name = 'Tampered by A'
+    where id = '20000000-0000-4000-8000-000000000002'
+    returning 1
+  ) select count(*)::integer from changed),
   0,
-  'user A cannot target user B project for update'
+  'user A cannot update user B project'
 );
 
 select is(
-  (select count(*)::integer from public.projects where id = '20000000-0000-4000-8000-000000000002'),
+  (with removed as (
+    delete from public.projects
+    where id = '20000000-0000-4000-8000-000000000002'
+    returning 1
+  ) select count(*)::integer from removed),
   0,
-  'user A cannot target user B project for deletion'
+  'user A cannot delete user B project'
 );
 
 select throws_ok(
