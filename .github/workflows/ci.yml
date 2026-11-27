@@ -70,7 +70,7 @@ jobs:
           import re
           config = Path("supabase/config.toml")
           content = config.read_text()
-          content = re.sub(r"(?m)^enable_confirmations\\s*=\\s*true$", "enable_confirmations = false", content)
+          content = re.sub(r"(?m)^enable_confirmations\s*=\s*true$", "enable_confirmations = false", content)
           config.write_text(content)
           PY
 
