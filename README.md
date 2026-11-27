@@ -6,7 +6,7 @@ A private AI workspace for software development, research, learning, and project
 
 The application foundation and Supabase integration are implemented. The repository includes account authentication, private conversations, saved memories, projects, tasks, an approval inbox, audit events, and a central OpenAI Responses API assistant.
 
-The Supabase project has been created, all three SQL migrations have been applied, and the database schema and row-level security policies have been inspected. Table-level RLS is enabled throughout the public application schema; cross-account integration tests are still outstanding. The application is **not yet production-ready**: end-to-end authentication and data-isolation tests, a dependency lockfile, deployment configuration, and final operational verification remain outstanding.
+The Supabase project has been created, all three SQL migrations have been applied, and the database schema and row-level security policies have been inspected. Table-level RLS is enabled throughout the public application schema; a two-account behavioral RLS suite has been added and is awaiting a clean CI pass. The application is **not yet production-ready**: end-to-end authentication and data-isolation tests, a dependency lockfile, deployment configuration, and final operational verification remain outstanding.
 
 The Research workspace provides a focused research brief form that routes questions through the assistant. Live web search is optional and must be enabled with `ENABLE_WEB_SEARCH=true`; without it, the assistant is instructed not to claim it performed live research. The workspace status indicator reports configuration state to signed-in users without exposing secret values.
 
@@ -71,7 +71,7 @@ Migrations are in `supabase/migrations/`:
 
 They define the user-owned application tables, row-level security policies, and server-side rate-limit function. The `api_rate_limits` table intentionally has no authenticated-user policy; it is accessed by the server using the service-role client.
 
-A pgTAP structural security suite is in `supabase/tests/security_policies.test.sql`. To run it safely, initialize and start a local Supabase stack (`npx supabase init`, then `npx supabase start`) and run `npx supabase test db`. These checks verify RLS flags, policy definitions, grants, and ownership constraints. They do not replace behavioral two-account tests.
+The pgTAP suites are in `supabase/tests/`. `security_policies.test.sql` checks RLS flags, policy definitions, grants, and ownership constraints. `rls_behavior.test.sql` seeds two synthetic accounts inside a transaction and checks cross-account reads, writes, and ownership boundaries. Run both against an isolated local Supabase stack with `npx supabase test db`; never run fixture tests against production data. The CI workflow starts its own isolated stack and runs both suites.
 
 ## Available scripts
 
@@ -102,4 +102,4 @@ These controls reduce risk but do not replace independent security testing. Do n
 4. Dedicated research and document workflows
 5. Dependency reproducibility, observability, and deployment hardening
 
-See [docs/architecture.md](docs/architecture.md) and [docs/security-model.md](docs/security-model.md) for additional design details.
+See [docs/architecture.md](docs/architecture.md), [docs/security-model.md](docs/security-model.md), and [docs/deployment-readiness.md](docs/deployment-readiness.md) for architecture, security boundaries, and pre-release requirements.
