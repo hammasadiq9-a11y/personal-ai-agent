@@ -7,12 +7,15 @@ create extension if not exists pgcrypto;
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
-as $$
+set search_path = ''
+as $function$
 begin
   new.updated_at = now();
   return new;
 end;
-$$;
+$function$;
+
+revoke all on function public.set_updated_at() from public, anon, authenticated;
 
 create table public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
@@ -37,6 +40,8 @@ begin
   return new;
 end;
 $$;
+
+revoke all on function public.handle_new_user() from public, anon, authenticated;
 
 create trigger on_auth_user_created
 after insert on auth.users
@@ -118,6 +123,10 @@ create table public.memories (
 
 create index memories_user_updated_idx on public.memories(user_id, pinned desc, updated_at desc);
 create index memories_search_idx on public.memories using gin(search_document);
+create index memories_project_user_idx on public.memories(project_id, user_id);
+create index messages_conversation_user_idx on public.messages(conversation_id, user_id);
+create index messages_user_id_idx on public.messages(user_id);
+create index tasks_project_user_idx on public.tasks(project_id, user_id);
 
 create table public.approvals (
   id uuid primary key default gen_random_uuid(),
@@ -145,19 +154,19 @@ create table public.api_rate_limits (
 alter table public.api_rate_limits enable row level security;
 
 create or replace function public.consume_chat_rate_limit(
+  p_user_id uuid,
   p_max_requests integer,
   p_window_seconds integer
 )
 returns boolean
 language plpgsql
-security definer
+security invoker
 set search_path = ''
-as $
+as $$
 declare
-  v_user_id uuid := auth.uid();
   v_request_count integer;
 begin
-  if v_user_id is null then
+  if p_user_id is null then
     return false;
   end if;
 
@@ -167,7 +176,7 @@ begin
   end if;
 
   insert into public.api_rate_limits (user_id, window_started_at, request_count)
-  values (v_user_id, now(), 1)
+  values (p_user_id, now(), 1)
   on conflict (user_id) do update
   set
     window_started_at = case
@@ -184,10 +193,10 @@ begin
 
   return v_request_count <= p_max_requests;
 end;
-$;
+$$;
 
-revoke all on function public.consume_chat_rate_limit(integer, integer) from public;
-grant execute on function public.consume_chat_rate_limit(integer, integer) to authenticated;
+revoke all on function public.consume_chat_rate_limit(uuid, integer, integer) from public, anon, authenticated;
+grant execute on function public.consume_chat_rate_limit(uuid, integer, integer) to service_role;
 
 create table public.audit_logs (
   id bigint generated always as identity primary key,

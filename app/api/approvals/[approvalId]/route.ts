@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { readJsonBody } from "@/lib/http/read-json";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { hashPayload } from "@/lib/security/payload-hash";
@@ -15,17 +16,11 @@ export async function PATCH(
     return NextResponse.json({ error: "The approval ID is invalid." }, { status: 400 });
   }
 
-  const raw = await request.text();
-  if (new TextEncoder().encode(raw).byteLength > 1024) {
-    return NextResponse.json({ error: "The decision request is too large." }, { status: 413 });
+  const parsedBody = await readJsonBody(request, 1024);
+  if (!parsedBody.ok) {
+    return NextResponse.json({ error: parsedBody.error }, { status: parsedBody.status });
   }
-
-  let body: unknown;
-  try {
-    body = JSON.parse(raw);
-  } catch {
-    return NextResponse.json({ error: "The request must contain valid JSON." }, { status: 400 });
-  }
+  const body = parsedBody.value;
 
   const decision = body && typeof body === "object"
     ? (body as Record<string, unknown>).decision

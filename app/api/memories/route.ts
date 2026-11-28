@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { readJsonBody } from "@/lib/http/read-json";
 import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -44,19 +45,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Sign in to save memory." }, { status: 401 });
     }
 
-    const raw = await request.text();
-    if (new TextEncoder().encode(raw).byteLength > 12 * 1024) {
-      return NextResponse.json({ error: "The memory request is too large." }, { status: 413 });
-    }
+    const parsedBody = await readJsonBody(request, 12 * 1024);
+    if (!parsedBody.ok) return NextResponse.json({ error: parsedBody.error }, { status: parsedBody.status });
+    const body = parsedBody.value;
 
-    let body: unknown;
-    try {
-      body = JSON.parse(raw);
-    } catch {
-      return NextResponse.json({ error: "The request must contain valid JSON." }, { status: 400 });
-    }
-
-    if (!body || typeof body !== "object") {
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
       return NextResponse.json({ error: "A memory object is required." }, { status: 400 });
     }
 

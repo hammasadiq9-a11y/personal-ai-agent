@@ -1,55 +1,77 @@
 # Personal AI Workspace
 
-A personal assistant workspace for software development, research, learning, and project planning.
+A private AI workspace for software development, research, learning, and project planning.
 
 ## Current status
 
-**Foundation milestone in progress.** The repository contains the initial Next.js application, a central OpenAI Responses API service, a chat interface, request validation, and a Supabase SQL migration defining user-owned conversations, messages, projects, tasks, approvals, and audit history. Supabase authentication screens, cookie-based sessions, and server-side chat authentication are implemented in code. The app includes conversation persistence, saved-memory management, and an approval inbox with payload-hash checks. It is not connected to a live Supabase project yet, so database-backed features cannot run until the project is configured and the migration is applied. Hosted web search can be enabled with a supported model. Read-only GitHub repository inspection is available when a server-side token is configured. GitHub writes are limited to agent-branch creation, file commits on agent/* branches, issue creation, and pull-request creation after explicit approval. Other write operations and deployment remain unimplemented.
+The application foundation and Supabase integration are implemented. The repository includes account authentication, private conversations, saved memories, projects, tasks, an approval inbox, audit events, and a central OpenAI Responses API assistant.
+
+The Supabase project has been created, all three SQL migrations have been applied, and the database schema and row-level security policies have been inspected. Table-level RLS is enabled throughout the public application schema; the structural and two-account behavioral RLS suites now pass in CI (53 pgTAP checks in total). The application is **not yet production-ready**: end-to-end authentication and data-isolation tests, deployment configuration, end-to-end authentication coverage, and final operational verification remain outstanding. A CI-generated `package-lock.json` is now committed, and CI installs from it with `npm ci`.
+
+The Research workspace provides a focused research brief form that routes questions through the assistant. Live web search is optional and must be enabled with `ENABLE_WEB_SEARCH=true`; without it, the assistant is instructed not to claim it performed live research. The workspace status indicator reports configuration state to signed-in users without exposing secret values.
 
 ## Stack
 
-- Next.js App Router and TypeScript
+- Next.js App Router, React, and TypeScript
 - Tailwind CSS v4
 - OpenAI Responses API
-- Supabase Auth and Postgres (integration code and initial migration drafted; live project setup pending)
-- Optional hosted web search through the Responses API
+- Supabase Auth and Postgres
+- Optional hosted web search through the Responses API, surfaced through the Research workspace
 - Optional read-only GitHub API integration
+- Approval-gated GitHub writes
 
 ## Getting started
 
-Requirements: Node.js 20.9+ and npm.
+Requirements: Node.js 22 and npm.
 
 1. Install dependencies:
 
    ```bash
-   npm install
+   npm ci
    ```
 
-2. Create a local environment file:
+2. Copy the environment template:
 
    ```bash
    cp .env.example .env.local
    ```
 
-3. Create a Supabase project, then run `supabase/migrations/0001_initial_schema.sql` in its SQL editor. In Supabase Auth settings, enable email/password sign-in and set the Site URL to your app origin. Add the project URL and publishable key to `.env.local`. Set `SUPABASE_SERVICE_ROLE_KEY` to the project's service-role secret in the server environment only. Optionally add a fine-grained `GITHUB_TOKEN` with read-only access to the repositories you want Personal AI Workspace to inspect. Never expose either key with a `NEXT_PUBLIC_` prefix. To enable approved GitHub writes, add a separate `GITHUB_WRITE_TOKEN` scoped to selected repositories with only the required Contents, Issues, and Pull requests write permissions. For local development, allow `http://localhost:3000/auth/callback` as an auth redirect URL.
+3. Configure the Supabase project values:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`
 
-4. Add an OpenAI API key to `.env.local`. The default model below keeps hosted web search disabled:
+   Keep the service-role key server-side only. Never use a `NEXT_PUBLIC_` prefix for it.
 
-   ```env
-   OPENAI_API_KEY=your_key_here
-   OPENAI_MODEL=gpt-4.1-mini
-   ENABLE_WEB_SEARCH=false
-   ```
+4. Configure `OPENAI_API_KEY` for AI chat. Optionally set `OPENAI_MODEL` and `ENABLE_WEB_SEARCH`. Hosted web search may add API usage costs.
 
-5. Start the development server:
+5. In Supabase Auth, enable the sign-in method you intend to use and configure the application origin and callback URL. The local callback URL is `http://localhost:3000/auth/callback`.
+
+6. Start the development server:
 
    ```bash
    npm run dev
    ```
 
-6. Open http://localhost:3000.
+7. Open `http://localhost:3000`.
 
-For hosted web search, switch to a supported model such as `gpt-6.2-astra` and set `ENABLE_WEB_SEARCH=true`. This uses hosted web search and may add API usage costs.
+Optional GitHub integration:
+- `GITHUB_TOKEN`: read-only access to repositories the assistant may inspect.
+- `GITHUB_WRITE_TOKEN`: separate least-privilege token for the explicitly approval-gated operations. Limit it to selected repositories and only the required Contents, Issues, and Pull requests permissions.
+
+Do not paste secrets into chat, commit them, or place them in client-side variables.
+
+## Database
+
+Migrations are in `supabase/migrations/`:
+
+- `0001_initial_schema.sql`
+- `0002_harden_schema.sql`
+- `0003_lock_down_rate_limit_storage.sql`
+
+They define the user-owned application tables, row-level security policies, and server-side rate-limit function. The `api_rate_limits` table intentionally has no authenticated-user policy; it is accessed by the server using the service-role client.
+
+The pgTAP suites are in `supabase/tests/`. `security_policies.test.sql` checks RLS flags, policy definitions, grants, and ownership constraints. `rls_behavior.test.sql` seeds two synthetic accounts inside a transaction and checks cross-account reads, writes, and ownership boundaries. Run both against an isolated local Supabase stack with `npx supabase test db`; never run fixture tests against production data. The CI workflow starts its own isolated stack and runs both suites.
 
 ## Available scripts
 
@@ -57,32 +79,28 @@ For hosted web search, switch to a supported model such as `gpt-6.2-astra` and s
 - `npm run build` — production build
 - `npm run lint` — ESLint
 - `npm run typecheck` — TypeScript validation
-- `npm run test` — unit tests
+- `npm run test` — Vitest unit tests
+- `npm run test:e2e:smoke` — authenticated integration smoke test against a running local app and Supabase stack (configured and run by CI)
+- Supabase migrations and pgTAP structural security tests run in the `database-security` CI job using an isolated local Supabase stack
 
-## Security notes
+## Security boundaries
 
-- Keep API keys in server-side environment variables. Never commit `.env.local`.
-- The chat endpoint verifies the signed-in user, validates request size, and applies a database-backed limit of 20 chat requests per user per minute.
-- Chat turns are stored in owner-scoped conversations. The server loads prior history from the database rather than trusting browser-supplied assistant messages. OpenAI requests use `store: false` and a bounded timeout/output size.
-- Saved memory is loaded as background context. The assistant only writes a memory when the user explicitly asks.
-- GitHub branch creation, file commits on agent/* branches, issue creation, and pull-request creation can be proposed through function calling. Proposals are payload-hashed, audited, expire after 24 hours, and execute only after explicit approval. No other external writes are enabled.
-- The migration has not been applied to a live database or tested against real users. Projects can be created/archived; tasks can be created, listed, and updated. Other external action types and deployment remain unimplemented. Do not expose this as a public multi-user service until database setup, tests, and security checks are complete.
+- API routes verify the signed-in user and scope user-owned records to that account.
+- Request JSON is read with a streaming byte limit before it is buffered and parsed.
+- Chat usage is limited to 20 requests per user per minute through a database-backed function.
+- OpenAI requests use `store: false`, bounded timeouts, and output limits.
+- GitHub writes are limited to creating `agent/*` branches, committing files on `agent/*` branches, creating issues, and creating pull requests from `agent/*` branches.
+- GitHub write proposals are payload-hashed, expire after 24 hours, and require an explicit user decision. No deployment, merge, delete, permission-change, or messaging actions are enabled.
+- Saved memory is only written when the user explicitly requests it.
+
+These controls reduce risk but do not replace independent security testing. Do not expose the application as a public multi-user service until the remaining tests and deployment hardening are complete.
 
 ## Roadmap
 
 1. Application foundation and AI chat
-2. Connect Supabase and verify account creation, sign-in, and RLS isolation
-3. Add document retrieval and task due-date workflows
-4. Expand the GitHub action allowlist after security and integration testing
-5. Tests, observability, and deployment hardening
+2. Supabase integration and RLS verification
+3. Functional and security test coverage
+4. Dedicated research and document workflows
+5. Dependency reproducibility, observability, and deployment hardening
 
-## Architecture and security notes
-
-See [`docs/architecture.md`](docs/architecture.md) for the system design and [`docs/security-model.md`](docs/security-model.md) for tool risk classes, approval lifecycle, and execution boundaries.
-
-## Project principles
-
-- One central assistant before adding specialist agents.
-- Read and prepare before executing.
-- Ask for explicit approval before consequential actions.
-- Verify outcomes; never report unperformed work as complete.
+See [docs/architecture.md](docs/architecture.md), [docs/security-model.md](docs/security-model.md), and [docs/deployment-readiness.md](docs/deployment-readiness.md) for architecture, security boundaries, and pre-release requirements.

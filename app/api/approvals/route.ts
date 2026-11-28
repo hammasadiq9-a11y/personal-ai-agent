@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { readJsonBody } from "@/lib/http/read-json";
 import { containsCredentialLikeField, hashPayload } from "@/lib/security/payload-hash";
 import { isSupportedGitHubAction } from "@/lib/tools/github-actions";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -39,17 +40,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Sign in to create an approval proposal." }, { status: 401 });
     }
 
-    const raw = await request.text();
-    if (new TextEncoder().encode(raw).byteLength > 48 * 1024) {
-      return NextResponse.json({ error: "The proposal is too large." }, { status: 413 });
+    const parsedBody = await readJsonBody(request, 48 * 1024);
+    if (!parsedBody.ok) {
+      return NextResponse.json({ error: parsedBody.error }, { status: parsedBody.status });
     }
-
-    let body: unknown;
-    try {
-      body = JSON.parse(raw);
-    } catch {
-      return NextResponse.json({ error: "The request must contain valid JSON." }, { status: 400 });
-    }
+    const body = parsedBody.value;
 
     if (!body || typeof body !== "object" || Array.isArray(body)) {
       return NextResponse.json({ error: "An approval proposal is required." }, { status: 400 });
